@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "OrderStatusHistories")
+@Table(name = "order_status_history")
 @Setter
 @Getter
 @NoArgsConstructor

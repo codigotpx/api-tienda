@@ -14,7 +14,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
 
     @Query("""
 
-            SELECT p.id, p.name, p.sku, i.availableStock, i.minimumStock
+        SELECT p.id, p.name, p.sku, i.availableStock, i.minimumStock
         FROM Inventory i
         JOIN i.product p
         WHERE i.availableStock < i.minimumStock

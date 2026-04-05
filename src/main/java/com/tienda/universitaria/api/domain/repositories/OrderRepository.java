@@ -15,13 +15,18 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     List<Order> findByCustomerId(UUID customerId);
 
-    @Query("SELECT o FROM Order o WHERE " +
-            "(:customerId IS NULL OR o.customer.id = :customerId) AND " +
-            "(:status IS NULL OR o.status = :status) AND " +
-            "(:from IS NULL OR o.createdAt >= :from) AND " +
-            "(:to IS NULL OR o.createdAt <= :to) AND " +
-            "(:minTotal IS NULL OR o.total >= :minTotal) AND " +
-            "(:maxTotal IS NULL OR o.total <= :maxTotal)")
+    // Use COALESCE to avoid generating "... (? IS NULL OR ...)" SQL fragments where
+    // Postgres can't infer the type of a NULL bind parameter.
+    @Query("""
+        SELECT o
+        FROM Order o
+        WHERE o.customer.id = COALESCE(:customerId, o.customer.id)
+          AND o.status = COALESCE(:status, o.status)
+          AND o.createdAt >= COALESCE(:from, o.createdAt)
+          AND o.createdAt <= COALESCE(:to, o.createdAt)
+          AND o.total >= COALESCE(:minTotal, o.total)
+          AND o.total <= COALESCE(:maxTotal, o.total)
+        """)
     List<Order> findByFilters(
             @Param("customerId") UUID customerId,
             @Param("status") OrderStatus status,
