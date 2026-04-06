@@ -3,7 +3,9 @@ package com.tienda.universitaria.api.service;
 import com.tienda.universitaria.api.api.dto.ProductDtos;
 import com.tienda.universitaria.api.domain.entities.Category;
 import com.tienda.universitaria.api.domain.entities.Product;
+import com.tienda.universitaria.api.domain.enums.OrderStatus;
 import com.tienda.universitaria.api.domain.repositories.CategoryRepository;
+import com.tienda.universitaria.api.domain.repositories.OrderItemsRepository;
 import com.tienda.universitaria.api.domain.repositories.ProductRepository;
 import com.tienda.universitaria.api.service.mapper.ProductMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -11,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,6 +24,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
+    private final OrderItemsRepository orderItemsRepository;
 
     @Override
     public ProductDtos.ProductResponse create(ProductDtos.ProductCreateRequest req) {
@@ -35,6 +39,10 @@ public class ProductServiceImpl implements ProductService {
         }
         if (productRepository.findBySku(req.sku()).isPresent()) {
             throw new IllegalArgumentException("Product sku already exists: " + req.sku());
+        }
+
+        if (req.price() == null || req.price().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Product price must be greater than zero");
         }
 
         Category category = categoryRepository.findById(req.categoryId())
@@ -59,6 +67,10 @@ public class ProductServiceImpl implements ProductService {
             throw new IllegalArgumentException("ProductUpdateRequest must not be null");
         }
 
+        if (req.price() != null && req.price().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Product price must be greater than zero");
+        }
+
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found: " + id));
 
@@ -68,7 +80,6 @@ public class ProductServiceImpl implements ProductService {
             product.setCategory(category);
         }
 
-        // SKU is ignored by mapper patch; keep this explicit in case req.sku() is provided.
         productMapper.patch(product, req);
         if (req.active() != null) {
             product.setActive(req.active());
@@ -153,6 +164,15 @@ public class ProductServiceImpl implements ProductService {
     public ProductDtos.ProductResponse setActive(UUID id, boolean active) {
         if (id == null) {
             throw new IllegalArgumentException("id must not be null");
+        }
+
+        boolean hasActiveOrders = orderItemsRepository.existsByProductIdAndOrderStatusIn(
+                        id,
+                        List.of(OrderStatus.CREATED, OrderStatus.PAID, OrderStatus.SHIPPED)
+                );
+        if (hasActiveOrders) {
+            throw new IllegalArgumentException(
+                    "Cannot deactivate product with active orders: " + id);
         }
 
         Product product = productRepository.findById(id)

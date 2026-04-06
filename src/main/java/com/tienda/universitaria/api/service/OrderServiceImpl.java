@@ -3,13 +3,8 @@ package com.tienda.universitaria.api.service;
 import com.tienda.universitaria.api.api.dto.OrderDtos;
 import com.tienda.universitaria.api.api.dto.OrderItemDtos;
 import com.tienda.universitaria.api.api.dto.OrderStatusHistoryDtos;
-import com.tienda.universitaria.api.domain.entities.Address;
-import com.tienda.universitaria.api.domain.entities.Customer;
-import com.tienda.universitaria.api.domain.entities.Inventory;
-import com.tienda.universitaria.api.domain.entities.Order;
-import com.tienda.universitaria.api.domain.entities.OrderItem;
-import com.tienda.universitaria.api.domain.entities.OrderStatusHistory;
-import com.tienda.universitaria.api.domain.entities.Product;
+import com.tienda.universitaria.api.domain.entities.*;
+import com.tienda.universitaria.api.domain.enums.CustomerStatus;
 import com.tienda.universitaria.api.domain.enums.OrderStatus;
 import com.tienda.universitaria.api.domain.repositories.AddressRepository;
 import com.tienda.universitaria.api.domain.repositories.CustomerRepository;
@@ -27,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -61,6 +58,9 @@ public class OrderServiceImpl implements OrderService {
 
         Customer customer = customerRepository.findById(req.customerId())
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found: " + req.customerId()));
+        if (customer.getStatus() != CustomerStatus.ACTIVE) {
+            throw new IllegalArgumentException("Customer status must be ACTIVE");
+        }
 
         if (!addressRepository.existsByIdAndCustomerId(req.addressId(), req.customerId())) {
             throw new EntityNotFoundException("Address not found for customer. customerId=%s addressId=%s"
@@ -92,17 +92,11 @@ public class OrderServiceImpl implements OrderService {
                 throw new IllegalArgumentException("Product is inactive: " + itemReq.productId());
             }
 
-            Inventory inventory = inventoryRepository.findByProductId(itemReq.productId())
-                    .orElseThrow(() -> new EntityNotFoundException("Inventory not found for product: " + itemReq.productId()));
-            if (inventory.getAvailableStock() < itemReq.quantity()) {
-                throw new IllegalArgumentException("Not enough stock for product %s. available=%s requested=%s"
-                        .formatted(itemReq.productId(), inventory.getAvailableStock(), itemReq.quantity()));
-            }
-
             BigDecimal unitPrice = product.getPrice();
             if (unitPrice == null) {
                 throw new IllegalStateException("Product price is null: " + itemReq.productId());
             }
+
             BigDecimal subtotal = unitPrice
                     .multiply(BigDecimal.valueOf(itemReq.quantity()))
                     .setScale(2, RoundingMode.HALF_UP);
@@ -189,38 +183,40 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("newStatus must not be null");
         }
 
+
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderId));
 
         OrderStatus previous = order.getStatus();
-        if (previous == OrderStatus.CANCELLED || previous == OrderStatus.DELIVERED) {
-            throw new IllegalArgumentException("Order status can not be changed from " + previous);
-        }
         if (previous == newStatus) {
             return orderMapper.toResponse(order);
         }
-
         if (!isValidTransition(previous, newStatus)) {
             throw new IllegalArgumentException("Invalid order status transition: " + previous + " -> " + newStatus);
         }
 
-        // Apply inventory "discount" (reserve stock) at payment time, not at creation time.
         if (newStatus == OrderStatus.PAID) {
-            for (OrderItem oi : order.getOrderItems()) {
-                UUID productId = oi.getProduct().getId();
-                int updated = inventoryRepository.tryDecrementStock(productId, oi.getQuantity());
-                if (updated != 1) {
-                    throw new IllegalArgumentException("Insufficient stock to pay order. productId=%s requested=%s"
-                            .formatted(productId, oi.getQuantity()));
+            Map<UUID, Integer> qtyByProduct = aggregateQtyByProduct(order);
+            for (Map.Entry<UUID, Integer> e : qtyByProduct.entrySet()) {
+                Inventory inv = inventoryRepository.findByProductId(e.getKey())
+                        .orElseThrow(() -> new EntityNotFoundException(
+                                "Inventory not found for product: " + e.getKey()));
+                if (inv.getAvailableStock() < e.getValue()) {
+                    throw new IllegalArgumentException(
+                            "Insufficient stock to pay order. productId=%s available=%s requested=%s"
+                                    .formatted(e.getKey(), inv.getAvailableStock(), e.getValue()));
                 }
+            }
+
+            for (Map.Entry<UUID, Integer> e : qtyByProduct.entrySet()) {
+                inventoryRepository.tryDecrementStock(e.getKey(), e.getValue());
             }
         }
 
-        // Reverse stock only if it was previously reserved (paid).
         if (newStatus == OrderStatus.CANCELLED && previous == OrderStatus.PAID) {
-            for (OrderItem oi : order.getOrderItems()) {
-                UUID productId = oi.getProduct().getId();
-                inventoryRepository.incrementStock(productId, oi.getQuantity());
+            Map<UUID, Integer> qtyByProduct = aggregateQtyByProduct(order);
+            for (Map.Entry<UUID, Integer> e : qtyByProduct.entrySet()) {
+                inventoryRepository.incrementStock(e.getKey(), e.getValue());
             }
         }
 
@@ -267,4 +263,14 @@ public class OrderServiceImpl implements OrderService {
             case DELIVERED, CANCELLED -> false;
         };
     }
+
+    private Map<UUID, Integer> aggregateQtyByProduct(Order order) {
+        Map<UUID, Integer> qtyByProduct = new HashMap<>();
+        for (OrderItem oi : order.getOrderItems()) {
+            UUID productId = oi.getProduct().getId();
+            qtyByProduct.merge(productId, oi.getQuantity(), Integer::sum);
+        }
+        return qtyByProduct;
+    }
 }
+
