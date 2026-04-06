@@ -33,14 +33,13 @@ class OrderMapperTest {
         UUID productId = UUID.fromString("33333333-3333-3333-3333-333333333333");
 
         Order entity = mapper.toEntity(new OrderDtos.OrderCreateRequest(
-                new BigDecimal("30.00"),
                 customerId,
                 addressId,
                 List.of(new OrderItemDtos.OrderItemCreateRequest(productId, 3))
         ));
 
         assertNull(entity.getId());
-        assertEquals(new BigDecimal("30.00"), entity.getTotal());
+        assertNull(entity.getTotal());
         assertEquals(OrderStatus.CREATED, entity.getStatus());
         assertNull(entity.getCreatedAt());
         assertNull(entity.getUpdatedAt());

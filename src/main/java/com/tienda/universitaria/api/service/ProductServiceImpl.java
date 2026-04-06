@@ -166,13 +166,15 @@ public class ProductServiceImpl implements ProductService {
             throw new IllegalArgumentException("id must not be null");
         }
 
-        boolean hasActiveOrders = orderItemsRepository.existsByProductIdAndOrderStatusIn(
-                        id,
-                        List.of(OrderStatus.CREATED, OrderStatus.PAID, OrderStatus.SHIPPED)
-                );
-        if (hasActiveOrders) {
-            throw new IllegalArgumentException(
-                    "Cannot deactivate product with active orders: " + id);
+        if (!active) {
+            boolean hasActiveOrders = orderItemsRepository.existsByProductIdAndOrderStatusIn(
+                    id,
+                    List.of(OrderStatus.CREATED, OrderStatus.PAID, OrderStatus.SHIPPED)
+            );
+            if (hasActiveOrders) {
+                throw new IllegalArgumentException(
+                        "Cannot deactivate product with active orders: " + id);
+            }
         }
 
         Product product = productRepository.findById(id)
