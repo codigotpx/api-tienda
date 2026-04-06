@@ -91,7 +91,6 @@ public class OrderItemServiceImpl implements OrderItemService {
 
         OrderItem saved = orderItemsRepository.save(item);
 
-        // Keep bidirectional relationship consistent in-memory.
         order.getOrderItems().add(saved);
 
         recalcAndPersistOrderTotal(order);
