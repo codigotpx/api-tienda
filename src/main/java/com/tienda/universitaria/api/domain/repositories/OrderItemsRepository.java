@@ -29,4 +29,6 @@ public interface OrderItemsRepository extends JpaRepository<OrderItem, UUID> {
             @Param("to") LocalDateTime to
     );
 
+    boolean existsByProductIdAndOrderStatusIn(UUID productId, List<OrderStatus> statuses);
+
 }
