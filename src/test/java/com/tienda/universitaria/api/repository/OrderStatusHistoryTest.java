@@ -25,25 +25,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Testcontainers
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-public class OrderStatusHistoryTest {
-    @Container
-    static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:16-alpine");
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
-        registry.add("spring.datasource.username", postgreSQLContainer::getUsername);
-        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-    }
-
-    @Test
-    void shouldStart() {
-        System.out.println("Container running " + postgreSQLContainer.isRunning());
-    }
+public class OrderStatusHistoryTest extends AbstractRepositoryIntegration {
 
     @Autowired
     private OrderStatusHistoryRepository historyRepository;
