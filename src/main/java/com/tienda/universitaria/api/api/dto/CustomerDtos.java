@@ -2,6 +2,7 @@ package com.tienda.universitaria.api.api.dto;
 
 import com.tienda.universitaria.api.domain.enums.CustomerStatus;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 public class CustomerDtos {
@@ -10,14 +11,14 @@ public class CustomerDtos {
             String lastName,
             String phone,
             String email
-    ) {}
+    ) implements Serializable {}
 
     public record CustomerUpdateRequest(
             String firstName,
             String lastName,
             String phone,
             String email
-    ) {}
+    ) implements Serializable {}
 
     public record CustomerResponse(
             UUID id,
@@ -26,7 +27,7 @@ public class CustomerDtos {
             String email,
             String phone,
             CustomerStatus status
-    ) {}
+    ) implements Serializable {}
 
 
 }

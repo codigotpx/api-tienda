@@ -1,5 +1,6 @@
 package com.tienda.universitaria.api.api.dto;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 public class AddressDtos {
@@ -9,7 +10,7 @@ public class AddressDtos {
           String state,
           String zip,
           String country
-    ) {}
+    ) implements Serializable {}
 
     public record AddressUpdateRequest(
           String street,
@@ -17,7 +18,7 @@ public class AddressDtos {
           String state,
           String zip,
           String country
-    ) {}
+    ) implements Serializable {}
 
     public record AddressResponse(
           UUID id,
@@ -27,5 +28,5 @@ public class AddressDtos {
           String zip,
           String country,
           UUID customerId
-    ){}
+    ) implements Serializable{}
 }

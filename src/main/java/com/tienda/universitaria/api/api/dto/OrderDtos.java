@@ -2,6 +2,7 @@ package com.tienda.universitaria.api.api.dto;
 
 import com.tienda.universitaria.api.domain.enums.OrderStatus;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,7 +13,7 @@ public class OrderDtos {
             UUID customerId,
             UUID addressId,
             List<OrderItemDtos.OrderItemCreateRequest> orderItems
-    ) {}
+    ) implements Serializable {}
 
     public record OrderResponse(
             UUID id,
@@ -24,5 +25,5 @@ public class OrderDtos {
             List<OrderItemDtos.OrderItemResponse> orderItems,
             LocalDateTime createAt,
             LocalDateTime updateAt
-    ) {}
+    ) implements Serializable {}
 }

@@ -1,5 +1,6 @@
 package com.tienda.universitaria.api.api.dto;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -14,7 +15,7 @@ public class ReportDtos {
             String sku,
             String name,
             long totalSold
-    ) {}
+    ) implements Serializable {}
 
     /**
      * Derived from {@code OrderRepository.findMonthlyIncomeRaw()}.
@@ -23,7 +24,7 @@ public class ReportDtos {
             int year,
             int month,
             BigDecimal total
-    ) {}
+    ) implements Serializable {}
 
     /**
      * Derived from {@code OrderRepository.findTopCustomersRaw()}.
@@ -33,7 +34,7 @@ public class ReportDtos {
             String firstName,
             String lastName,
             BigDecimal total
-    ) {}
+    ) implements Serializable {}
 
     /**
      * Derived from {@code OrderRepository.findTopCategoriesByVolumeRaw()}.
@@ -41,7 +42,7 @@ public class ReportDtos {
     public record TopCategoryVolumeResponse(
             String categoryName,
             long totalQuantity
-    ) {}
+    ) implements Serializable {}
 
     /**
      * Derived from {@code InventoryRepository.findLowStockProductsRaw()}.
@@ -52,5 +53,5 @@ public class ReportDtos {
             String sku,
             int availableStock,
             int minimumStock
-    ) {}
+    ) implements Serializable {}
 }

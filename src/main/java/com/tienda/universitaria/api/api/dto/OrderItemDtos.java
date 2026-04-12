@@ -1,5 +1,6 @@
 package com.tienda.universitaria.api.api.dto;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -7,7 +8,7 @@ public class OrderItemDtos {
     public record OrderItemCreateRequest(
             UUID productId,
             int quantity
-    ) {}
+    ) implements Serializable {}
 
     public record OrderItemResponse(
             UUID id,
@@ -16,5 +17,5 @@ public class OrderItemDtos {
             int quantity,
             BigDecimal unitPrice,
             BigDecimal subtotal
-    ) {}
+    ) implements Serializable {}
 }

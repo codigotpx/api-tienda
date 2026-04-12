@@ -2,13 +2,14 @@ package com.tienda.universitaria.api.api.dto;
 
 import com.tienda.universitaria.api.domain.enums.OrderStatus;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class OrderStatusHistoryDtos {
     public record OrderStatusHistoryCreateRequest(
             String notes
-    ) {}
+    ) implements Serializable {}
 
     public record OrderStatusHistoryResponse(
             UUID id,
@@ -16,5 +17,5 @@ public class OrderStatusHistoryDtos {
             OrderStatus newStatus,
             String notes,
             LocalDateTime changedAt
-    ) {}
+    ) implements Serializable {}
 }
