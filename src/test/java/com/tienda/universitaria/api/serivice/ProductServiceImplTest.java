@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -157,7 +158,8 @@ class ProductServiceImplTest {
         UUID categoryId = UUID.randomUUID();
         when(categoryRepository.existsById(categoryId)).thenReturn(false);
 
-        assertThrows(EntityNotFoundException.class, () -> productService.getByCategory(categoryId));
+        assertThrows(EntityNotFoundException.class,
+                () -> productService.getByCategory(categoryId, PageRequest.of(0, 10)));
         verify(categoryRepository).existsById(categoryId);
         verifyNoInteractions(productRepository);
     }

@@ -1,6 +1,8 @@
 package com.tienda.universitaria.api.service;
 
 import com.tienda.universitaria.api.api.dto.ProductDtos;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,15 +17,15 @@ public interface ProductService {
 
     ProductDtos.ProductResponse getBySku(String sku);
 
-    List<ProductDtos.ProductResponse> getAll();
+    Page<ProductDtos.ProductResponse> getAll(Pageable pageable);
 
-    List<ProductDtos.ProductResponse> getActive();
+    Page<ProductDtos.ProductResponse> getActive(Pageable pageable);
 
-    List<ProductDtos.ProductResponse> getByCategory(UUID categoryId);
+    Page<ProductDtos.ProductResponse> getByCategory(UUID categoryId, Pageable pageable);
 
     List<ProductDtos.ProductResponse> getAllOrderByPriceAsc();
 
-    List<ProductDtos.ProductResponse> getLowStock();
+    Page<ProductDtos.ProductResponse> getLowStock(Pageable pageable);
 
     ProductDtos.ProductResponse setActive(UUID id, boolean active);
 

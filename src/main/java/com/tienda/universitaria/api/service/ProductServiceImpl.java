@@ -10,6 +10,8 @@ import com.tienda.universitaria.api.domain.repositories.ProductRepository;
 import com.tienda.universitaria.api.service.mapper.ProductMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -115,23 +117,19 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductDtos.ProductResponse> getAll() {
-        return productRepository.findAll().stream()
-                .map(productMapper::toResponse)
-                .toList();
+    public Page<ProductDtos.ProductResponse> getAll(Pageable pageable) {
+        return productRepository.findAll(pageable).map(productMapper::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductDtos.ProductResponse> getActive() {
-        return productRepository.findByActiveTrue().stream()
-                .map(productMapper::toResponse)
-                .toList();
+    public Page<ProductDtos.ProductResponse> getActive(Pageable pageable) {
+        return productRepository.findByActiveTrue(pageable).map(productMapper::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductDtos.ProductResponse> getByCategory(UUID categoryId) {
+    public Page<ProductDtos.ProductResponse> getByCategory(UUID categoryId, Pageable pageable) {
         if (categoryId == null) {
             throw new IllegalArgumentException("categoryId must not be null");
         }
@@ -139,9 +137,7 @@ public class ProductServiceImpl implements ProductService {
             throw new EntityNotFoundException("Category not found: " + categoryId);
         }
 
-        return productRepository.findByCategoryId(categoryId).stream()
-                .map(productMapper::toResponse)
-                .toList();
+        return productRepository.findByCategoryId(categoryId, pageable).map(productMapper::toResponse);
     }
 
     @Override
@@ -154,10 +150,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductDtos.ProductResponse> getLowStock() {
-        return productRepository.findProductsWithLowStock().stream()
-                .map(productMapper::toResponse)
-                .toList();
+    public Page<ProductDtos.ProductResponse> getLowStock(Pageable pageable) {
+        return productRepository.findProductsWithLowStock(pageable).map(productMapper::toResponse);
     }
 
     @Override
