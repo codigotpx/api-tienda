@@ -1,17 +1,20 @@
 package com.tienda.universitaria.api.api.dto;
 
+import jakarta.validation.constraints.PositiveOrZero;
+
 import java.io.Serializable;
 import java.util.UUID;
 
 public class InventoryDtos {
+
     public record InventoryCreateRequest(
-            int availableStock,
-            int minimumStock
+            @PositiveOrZero(message = "Available stock cannot be negative") int availableStock,
+            @PositiveOrZero(message = "Minimum stock cannot be negative") int minimumStock
     ) implements Serializable {}
 
     public record InventoryUpdateRequest(
-            int availableStock,
-            int minimumStock
+            @PositiveOrZero(message = "Available stock cannot be negative") int availableStock,
+            @PositiveOrZero(message = "Minimum stock cannot be negative") int minimumStock
     ) implements Serializable {}
 
     public record InventoryResponse(

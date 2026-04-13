@@ -1,23 +1,25 @@
 package com.tienda.universitaria.api.api.dto;
 
 import com.tienda.universitaria.api.domain.enums.CustomerStatus;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
 import java.io.Serializable;
 import java.util.UUID;
 
 public class CustomerDtos {
     public record CustomerCreateRequest(
-            String firstName,
-            String lastName,
+            @NotBlank String firstName,
+            @NotBlank String lastName,
             String phone,
-            String email
+            @NotBlank @Email String email
     ) implements Serializable {}
 
     public record CustomerUpdateRequest(
             String firstName,
             String lastName,
             String phone,
-            String email
+            @Email String email
     ) implements Serializable {}
 
     public record CustomerResponse(
