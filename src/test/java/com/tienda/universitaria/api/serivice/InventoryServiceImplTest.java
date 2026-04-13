@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -146,14 +148,15 @@ class InventoryServiceImplTest {
         var i1 = Inventory.builder().id(UUID.randomUUID()).availableStock(10).minimumStock(2).product(Product.builder().id(p1).build()).build();
         var i2 = Inventory.builder().id(UUID.randomUUID()).availableStock(1).minimumStock(5).product(Product.builder().id(p2).build()).build();
 
-        when(inventoryRepository.findAll()).thenReturn(List.of(i1, i2));
+        var pageable = PageRequest.of(0, 10);
+        when(inventoryRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(i1, i2), pageable, 2));
         when(inventoryMapper.toResponse(i1)).thenReturn(new InventoryDtos.InventoryResponse(i1.getId(), 10, 2, p1));
         when(inventoryMapper.toResponse(i2)).thenReturn(new InventoryDtos.InventoryResponse(i2.getId(), 1, 5, p2));
 
-        var result = inventoryService.getAll();
+        var result = inventoryService.getAll(pageable);
 
-        assertEquals(2, result.size());
-        verify(inventoryRepository).findAll();
+        assertEquals(2, result.getContent().size());
+        verify(inventoryRepository).findAll(pageable);
         verify(inventoryMapper).toResponse(i1);
         verify(inventoryMapper).toResponse(i2);
     }
@@ -165,14 +168,15 @@ class InventoryServiceImplTest {
         var ok = Inventory.builder().id(UUID.randomUUID()).availableStock(10).minimumStock(2).product(Product.builder().id(p1).build()).build();
         var low = Inventory.builder().id(UUID.randomUUID()).availableStock(1).minimumStock(5).product(Product.builder().id(p2).build()).build();
 
-        when(inventoryRepository.findAll()).thenReturn(List.of(ok, low));
+        var pageable = PageRequest.of(0, 10);
+        when(inventoryRepository.findLowStock(pageable)).thenReturn(new PageImpl<>(List.of(low), pageable, 1));
         when(inventoryMapper.toResponse(low)).thenReturn(new InventoryDtos.InventoryResponse(low.getId(), 1, 5, p2));
 
-        var result = inventoryService.getLowStock();
+        var result = inventoryService.getLowStock(pageable);
 
-        assertEquals(1, result.size());
-        assertEquals(low.getId(), result.getFirst().id());
-        verify(inventoryRepository).findAll();
+        assertEquals(1, result.getContent().size());
+        assertEquals(low.getId(), result.getContent().getFirst().id());
+        verify(inventoryRepository).findLowStock(pageable);
         verify(inventoryMapper, never()).toResponse(ok);
         verify(inventoryMapper).toResponse(low);
     }

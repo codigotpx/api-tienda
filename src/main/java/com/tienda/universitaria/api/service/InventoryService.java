@@ -1,8 +1,9 @@
 package com.tienda.universitaria.api.service;
 
 import com.tienda.universitaria.api.api.dto.InventoryDtos;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface InventoryService {
@@ -15,9 +16,9 @@ public interface InventoryService {
 
     InventoryDtos.InventoryResponse getByProduct(UUID productId);
 
-    List<InventoryDtos.InventoryResponse> getAll();
+    Page<InventoryDtos.InventoryResponse> getAll(Pageable pageable);
 
-    List<InventoryDtos.InventoryResponse> getLowStock();
+    Page<InventoryDtos.InventoryResponse> getLowStock(Pageable pageable);
 
     InventoryDtos.InventoryResponse adjustStock(UUID productId, int delta);
 

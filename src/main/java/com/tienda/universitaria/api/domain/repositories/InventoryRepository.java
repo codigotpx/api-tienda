@@ -1,6 +1,8 @@
 package com.tienda.universitaria.api.domain.repositories;
 
 import com.tienda.universitaria.api.domain.entities.Inventory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +15,9 @@ import java.util.UUID;
 public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
 
     Optional<Inventory> findByProductId(UUID productId);
+
+    @Query("SELECT i FROM Inventory i WHERE i.availableStock < i.minimumStock")
+    Page<Inventory> findLowStock(Pageable pageable);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

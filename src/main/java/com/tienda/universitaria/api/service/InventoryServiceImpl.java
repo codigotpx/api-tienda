@@ -8,10 +8,11 @@ import com.tienda.universitaria.api.domain.repositories.ProductRepository;
 import com.tienda.universitaria.api.service.mapper.InventoryMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -99,19 +100,14 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<InventoryDtos.InventoryResponse> getAll() {
-        return inventoryRepository.findAll().stream()
-                .map(inventoryMapper::toResponse)
-                .toList();
+    public Page<InventoryDtos.InventoryResponse> getAll(Pageable pageable) {
+        return inventoryRepository.findAll(pageable).map(inventoryMapper::toResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<InventoryDtos.InventoryResponse> getLowStock() {
-        return inventoryRepository.findAll().stream()
-                .filter(i -> i.getAvailableStock() < i.getMinimumStock())
-                .map(inventoryMapper::toResponse)
-                .toList();
+    public Page<InventoryDtos.InventoryResponse> getLowStock(Pageable pageable) {
+        return inventoryRepository.findLowStock(pageable).map(inventoryMapper::toResponse);
     }
 
     @Override
