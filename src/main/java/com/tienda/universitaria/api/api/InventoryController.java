@@ -1,6 +1,6 @@
 package com.tienda.universitaria.api.api;
 
-import com.tienda.universitaria.api.api.dto.InventoryDtos.*;
+import  com.tienda.universitaria.api.api.dto.InventoryDtos.*;
 import com.tienda.universitaria.api.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

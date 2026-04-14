@@ -1,6 +1,7 @@
 package com.tienda.universitaria.api.serivice;
 
 import com.tienda.universitaria.api.api.dto.CustomerDtos;
+import com.tienda.universitaria.api.api.exception.ConflictException;
 import com.tienda.universitaria.api.domain.entities.Customer;
 import com.tienda.universitaria.api.domain.enums.CustomerStatus;
 import com.tienda.universitaria.api.domain.repositories.CustomerRepository;
@@ -81,7 +82,7 @@ public class CustomerServiceImplTest {
 
         when(customerRepository.existsByEmail("juan@test.com")).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> customerServiceImpl.create(req));
+        assertThrows(ConflictException.class, () -> customerServiceImpl.create(req));
 
         verify(customerRepository).existsByEmail("juan@test.com");
         verify(customerRepository, never()).save(any());
@@ -134,7 +135,7 @@ public class CustomerServiceImplTest {
         when(customerRepository.findById(id)).thenReturn(Optional.of(existing));
         when(customerRepository.existsByEmail("new@test.com")).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> customerServiceImpl.update(id, req));
+        assertThrows(ConflictException.class, () -> customerServiceImpl.update(id, req));
 
         verify(customerRepository).findById(id);
         verify(customerRepository).existsByEmail("new@test.com");

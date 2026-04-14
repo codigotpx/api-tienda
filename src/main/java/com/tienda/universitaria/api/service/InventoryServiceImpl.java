@@ -1,10 +1,6 @@
 package com.tienda.universitaria.api.service;
 
 import com.tienda.universitaria.api.api.dto.InventoryDtos;
-import com.tienda.universitaria.api.api.exception.BusinessException;
-import com.tienda.universitaria.api.api.exception.ConflictException;
-import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
-import com.tienda.universitaria.api.api.exception.ValidationException;
 import com.tienda.universitaria.api.domain.entities.Inventory;
 import com.tienda.universitaria.api.domain.entities.Product;
 import com.tienda.universitaria.api.domain.repositories.InventoryRepository;
@@ -16,7 +12,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import com.tienda.universitaria.api.api.exception.ValidationException;
+import com.tienda.universitaria.api.api.exception.ConflictException;
+import com.tienda.universitaria.api.api.exception.BusinessException;
+import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +35,12 @@ public class InventoryServiceImpl implements InventoryService {
         if (req == null) {
             throw new ValidationException("InventoryCreateRequest must not be null");
         }
-
+        if (req.availableStock() < 0) {
+            throw new ValidationException("availableStock must be >= 0");
+        }
+        if (req.minimumStock() < 0) {
+            throw new ValidationException("minimumStock must be >= 0");
+        }
         if (inventoryRepository.findByProductId(productId).isPresent()) {
             throw new ConflictException("Inventory already exists for product: " + productId);
         }
@@ -56,6 +62,12 @@ public class InventoryServiceImpl implements InventoryService {
         }
         if (req == null) {
             throw new ValidationException("InventoryUpdateRequest must not be null");
+        }
+        if (req.availableStock() < 0) {
+            throw new ValidationException("availableStock must be >= 0");
+        }
+        if (req.minimumStock() < 0) {
+            throw new ValidationException("minimumStock must be >= 0");
         }
 
         Inventory inventory = inventoryRepository.findByProductId(productId)
@@ -94,12 +106,14 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional(readOnly = true)
     public Page<InventoryDtos.InventoryResponse> getAll(Pageable pageable) {
         return inventoryRepository.findAll(pageable).map(inventoryMapper::toResponse);
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<InventoryDtos.InventoryResponse> getLowStock(Pageable pageable) {
-        return inventoryRepository.findLowStock(pageable).map(inventoryMapper::toResponse);
+        return inventoryRepository.findLowStock(pageable)
+                .map(inventoryMapper::toResponse);
     }
 
     @Override

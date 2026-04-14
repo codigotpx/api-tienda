@@ -1,7 +1,6 @@
 package com.tienda.universitaria.api.service;
 
 import com.tienda.universitaria.api.api.dto.OrderStatusHistoryDtos;
-import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
 import com.tienda.universitaria.api.domain.entities.Order;
 import com.tienda.universitaria.api.domain.entities.OrderStatusHistory;
 import com.tienda.universitaria.api.domain.enums.OrderStatus;
@@ -14,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import com.tienda.universitaria.api.api.exception.ValidationException;
+import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +27,13 @@ public class OrderStatusHistoryServiceImpl implements OrderStatusHistoryService 
     @Override
     @Transactional(readOnly = true)
     public List<OrderStatusHistoryDtos.OrderStatusHistoryResponse> getByOrder(UUID orderId) {
+        if (orderId == null) {
+            throw new ValidationException("orderId must not be null");
+        }
+        if (!orderRepository.existsById(orderId)) {
+            throw new ResourceNotFoundException("Order not found: " + orderId);
+        }
+
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
 
@@ -45,7 +53,17 @@ public class OrderStatusHistoryServiceImpl implements OrderStatusHistoryService 
             UUID orderId,
             OrderStatus previousStatus,
             OrderStatus newStatus,
-            OrderStatusHistoryDtos.OrderStatusHistoryCreateRequest req) {
+            OrderStatusHistoryDtos.OrderStatusHistoryCreateRequest req
+    ) {
+        if (orderId == null) {
+            throw new ValidationException("orderId must not be null");
+        }
+        if (newStatus == null) {
+            throw new ValidationException("newStatus must not be null");
+        }
+        if (req == null) {
+            throw new ValidationException("OrderStatusHistoryCreateRequest must not be null");
+        }
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
@@ -55,6 +73,8 @@ public class OrderStatusHistoryServiceImpl implements OrderStatusHistoryService 
         history.setPreviousStatus(previousStatus);
         history.setNewStatus(newStatus);
 
-        return orderStatusHistoryMapper.toResponse(orderStatusHistoryRepository.save(history));
+        OrderStatusHistory saved = orderStatusHistoryRepository.save(history);
+        return orderStatusHistoryMapper.toResponse(saved);
     }
 }
+

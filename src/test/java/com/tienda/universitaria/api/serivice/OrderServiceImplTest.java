@@ -2,6 +2,9 @@ package com.tienda.universitaria.api.serivice;
 
 import com.tienda.universitaria.api.api.dto.OrderDtos;
 import com.tienda.universitaria.api.api.dto.OrderItemDtos;
+import com.tienda.universitaria.api.api.exception.BusinessException;
+import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
+import com.tienda.universitaria.api.api.exception.ValidationException;
 import com.tienda.universitaria.api.domain.entities.Address;
 import com.tienda.universitaria.api.domain.entities.Customer;
 import com.tienda.universitaria.api.domain.entities.Inventory;
@@ -19,7 +22,6 @@ import com.tienda.universitaria.api.service.mapper.OrderItemMapper;
 import com.tienda.universitaria.api.service.mapper.OrderMapper;
 import com.tienda.universitaria.api.service.mapper.OrderStatusHistoryMapper;
 import com.tienda.universitaria.api.domain.entities.Product;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -59,7 +61,7 @@ class OrderServiceImplTest {
                 List.of()
         );
 
-        assertThrows(IllegalArgumentException.class, () -> orderService.create(req));
+        assertThrows(ValidationException.class, () -> orderService.create(req));
         verifyNoInteractions(orderRepository, customerRepository, addressRepository, productRepository, inventoryRepository);
     }
 
@@ -80,7 +82,7 @@ class OrderServiceImplTest {
         when(addressRepository.findById(addressId)).thenReturn(Optional.of(Address.builder().id(addressId).build()));
         when(orderMapper.toEntity(req)).thenReturn(new Order());
 
-        assertThrows(IllegalArgumentException.class, () -> orderService.create(req));
+        assertThrows(ValidationException.class, () -> orderService.create(req));
         verify(productRepository, never()).findById(any());
         verify(inventoryRepository, never()).tryDecrementStock(any(), anyInt());
         verify(inventoryRepository, never()).incrementStock(any(), anyInt());
@@ -98,7 +100,7 @@ class OrderServiceImplTest {
         when(customerRepository.findById(customerId))
                 .thenReturn(Optional.of(Customer.builder().id(customerId).status(CustomerStatus.INACTIVE).build()));
 
-        assertThrows(IllegalArgumentException.class, () -> orderService.create(req));
+        assertThrows(BusinessException.class, () -> orderService.create(req));
         verifyNoInteractions(addressRepository, productRepository, inventoryRepository, orderRepository);
     }
 
@@ -178,7 +180,7 @@ class OrderServiceImplTest {
         when(productRepository.findById(productId))
                 .thenReturn(Optional.of(Product.builder().id(productId).active(false).price(new BigDecimal("10.00")).build()));
 
-        assertThrows(IllegalArgumentException.class, () -> orderService.create(req));
+        assertThrows(BusinessException.class, () -> orderService.create(req));
         verify(orderRepository, never()).save(any());
     }
 
@@ -189,7 +191,7 @@ class OrderServiceImplTest {
 
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
-        assertThrows(IllegalArgumentException.class, () -> orderService.setStatus(orderId, OrderStatus.DELIVERED, null));
+        assertThrows(BusinessException.class, () -> orderService.setStatus(orderId, OrderStatus.DELIVERED, null));
         verify(orderRepository, never()).save(any());
         verify(inventoryRepository, never()).tryDecrementStock(any(), anyInt());
     }
@@ -207,7 +209,7 @@ class OrderServiceImplTest {
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
         when(inventoryRepository.findByProductId(productId)).thenReturn(Optional.of(Inventory.builder().availableStock(2).build()));
 
-        assertThrows(IllegalArgumentException.class, () -> orderService.setStatus(orderId, OrderStatus.PAID, "pay"));
+        assertThrows(BusinessException.class, () -> orderService.setStatus(orderId, OrderStatus.PAID, "pay"));
         verify(inventoryRepository, never()).tryDecrementStock(any(), anyInt());
         verify(orderRepository, never()).save(any());
     }
@@ -262,7 +264,7 @@ class OrderServiceImplTest {
         UUID orderId = UUID.randomUUID();
         when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> orderService.setStatus(orderId, OrderStatus.PAID, null));
+        assertThrows(ResourceNotFoundException.class, () -> orderService.setStatus(orderId, OrderStatus.PAID, null));
     }
 
     @Test
@@ -320,7 +322,7 @@ class OrderServiceImplTest {
 
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(BusinessException.class,
                 () -> orderService.setStatus(orderId, OrderStatus.CANCELLED, null));
         verify(orderRepository, never()).save(any());
     }

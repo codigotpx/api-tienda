@@ -39,7 +39,7 @@ public class AddressController {
         return ResponseEntity.ok(service.get(id));
     }
 
-    @GetMapping("/{customerId}")
+    @GetMapping("/customer/{customerId}")
     public ResponseEntity<List<AddressResponse>> getByCustomer(@PathVariable UUID customerId) {
         return ResponseEntity.ok(service.getByCustomer(customerId));
     }

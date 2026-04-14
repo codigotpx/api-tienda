@@ -1,7 +1,6 @@
 package com.tienda.universitaria.api.service;
 
 import com.tienda.universitaria.api.api.dto.AddressDtos;
-import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
 import com.tienda.universitaria.api.domain.entities.Address;
 import com.tienda.universitaria.api.domain.entities.Customer;
 import com.tienda.universitaria.api.domain.repositories.AddressRepository;
@@ -13,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import com.tienda.universitaria.api.api.exception.ValidationException;
+import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -24,40 +25,70 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public AddressDtos.AddressResponse create(UUID customerId, AddressDtos.AddressCreateRequest req) {
+        if (customerId == null) {
+            throw new ValidationException("customerId must not be null");
+        }
+        if (req == null) {
+            throw new ValidationException("AddressCreateRequest must not be null");
+        }
+
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found: " + customerId));
 
         Address address = addressMapper.toEntity(req);
         address.setCustomer(customer);
-        return addressMapper.toResponse(addressRepository.save(address));
+
+        Address saved = addressRepository.save(address);
+        return addressMapper.toResponse(saved);
     }
 
     @Override
     public AddressDtos.AddressResponse update(UUID customerId, UUID addressId, AddressDtos.AddressUpdateRequest req) {
-        if (!addressRepository.existsByIdAndCustomerId(addressId, customerId))
+        if (customerId == null) {
+            throw new ValidationException("customerId must not be null");
+        }
+        if (addressId == null) {
+            throw new ValidationException("addressId must not be null");
+        }
+        if (req == null) {
+            throw new ValidationException("AddressUpdateRequest must not be null");
+        }
+
+        if (!addressRepository.existsByIdAndCustomerId(addressId, customerId)) {
             throw new ResourceNotFoundException("Address not found for customer. customerId=%s addressId=%s"
                     .formatted(customerId, addressId));
+        }
 
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new ResourceNotFoundException("Address not found: " + addressId));
 
         addressMapper.patch(address, req);
-        return addressMapper.toResponse(addressRepository.save(address));
+        Address saved = addressRepository.save(address);
+        return addressMapper.toResponse(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public AddressDtos.AddressResponse get(UUID addressId) {
-        return addressRepository.findById(addressId)
-                .map(addressMapper::toResponse)
+        if (addressId == null) {
+            throw new ValidationException("addressId must not be null");
+        }
+
+        Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new ResourceNotFoundException("Address not found: " + addressId));
+        return addressMapper.toResponse(address);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<AddressDtos.AddressResponse> getByCustomer(UUID customerId) {
-        if (!customerRepository.existsById(customerId))
+        if (customerId == null) {
+            throw new ValidationException("customerId must not be null");
+        }
+
+        if (!customerRepository.existsById(customerId)) {
             throw new ResourceNotFoundException("Customer not found: " + customerId);
+        }
 
         return addressRepository.findByCustomerId(customerId).stream()
                 .map(addressMapper::toResponse)
@@ -66,12 +97,21 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public void delete(UUID customerId, UUID addressId) {
-        if (!addressRepository.existsByIdAndCustomerId(addressId, customerId))
+        if (customerId == null) {
+            throw new ValidationException("customerId must not be null");
+        }
+        if (addressId == null) {
+            throw new ValidationException("addressId must not be null");
+        }
+
+        if (!addressRepository.existsByIdAndCustomerId(addressId, customerId)) {
             throw new ResourceNotFoundException("Address not found for customer. customerId=%s addressId=%s"
                     .formatted(customerId, addressId));
+        }
 
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new ResourceNotFoundException("Address not found: " + addressId));
         addressRepository.delete(address);
     }
 }
+

@@ -1,6 +1,10 @@
 package com.tienda.universitaria.api.serivice;
 
 import com.tienda.universitaria.api.api.dto.ProductDtos;
+import com.tienda.universitaria.api.api.exception.BusinessException;
+import com.tienda.universitaria.api.api.exception.ConflictException;
+import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
+import com.tienda.universitaria.api.api.exception.ValidationException;
 import com.tienda.universitaria.api.domain.entities.Category;
 import com.tienda.universitaria.api.domain.entities.Product;
 import com.tienda.universitaria.api.domain.enums.OrderStatus;
@@ -9,7 +13,6 @@ import com.tienda.universitaria.api.domain.repositories.OrderItemsRepository;
 import com.tienda.universitaria.api.domain.repositories.ProductRepository;
 import com.tienda.universitaria.api.service.ProductServiceImpl;
 import com.tienda.universitaria.api.service.mapper.ProductMapper;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -92,7 +95,7 @@ class ProductServiceImplTest {
         );
         when(productRepository.findBySku("SKU-1")).thenReturn(Optional.of(Product.builder().build()));
 
-        assertThrows(IllegalArgumentException.class, () -> productService.create(req));
+        assertThrows(ConflictException.class, () -> productService.create(req));
         verify(productRepository).findBySku("SKU-1");
         verify(productRepository, never()).save(any());
     }
@@ -109,7 +112,7 @@ class ProductServiceImplTest {
         );
         when(productRepository.findBySku("SKU-1")).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> productService.create(req));
+        assertThrows(ValidationException.class, () -> productService.create(req));
         verify(productRepository).findBySku("SKU-1");
         verifyNoInteractions(categoryRepository, productMapper);
     }
@@ -149,7 +152,7 @@ class ProductServiceImplTest {
     void update_shouldRejectWhenPriceNotPositive() {
         UUID productId = UUID.randomUUID();
         var req = new ProductDtos.ProductUpdateRequest(null, null, null, new BigDecimal("-1.00"), null, null);
-        assertThrows(IllegalArgumentException.class, () -> productService.update(productId, req));
+        assertThrows(ValidationException.class, () -> productService.update(productId, req));
         verifyNoInteractions(productRepository, categoryRepository, productMapper);
     }
 
@@ -158,7 +161,7 @@ class ProductServiceImplTest {
         UUID categoryId = UUID.randomUUID();
         when(categoryRepository.existsById(categoryId)).thenReturn(false);
 
-        assertThrows(EntityNotFoundException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> productService.getByCategory(categoryId, PageRequest.of(0, 10)));
         verify(categoryRepository).existsById(categoryId);
         verifyNoInteractions(productRepository);
@@ -169,7 +172,7 @@ class ProductServiceImplTest {
         UUID productId = UUID.randomUUID();
         when(orderItemsRepository.existsByProductIdAndOrderStatusIn(eq(productId), anyList())).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> productService.setActive(productId, false));
+        assertThrows(BusinessException.class, () -> productService.setActive(productId, false));
 
         verify(orderItemsRepository).existsByProductIdAndOrderStatusIn(
                 eq(productId),

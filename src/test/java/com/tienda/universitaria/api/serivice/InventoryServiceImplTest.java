@@ -1,13 +1,15 @@
 package com.tienda.universitaria.api.serivice;
 
 import com.tienda.universitaria.api.api.dto.InventoryDtos;
+import com.tienda.universitaria.api.api.exception.BusinessException;
+import com.tienda.universitaria.api.api.exception.ConflictException;
+import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
 import com.tienda.universitaria.api.domain.entities.Inventory;
 import com.tienda.universitaria.api.domain.entities.Product;
 import com.tienda.universitaria.api.domain.repositories.InventoryRepository;
 import com.tienda.universitaria.api.domain.repositories.ProductRepository;
 import com.tienda.universitaria.api.service.InventoryServiceImpl;
 import com.tienda.universitaria.api.service.mapper.InventoryMapper;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import com.tienda.universitaria.api.api.exception.ValidationException;
 
 @ExtendWith(MockitoExtension.class)
 class InventoryServiceImplTest {
@@ -68,7 +71,7 @@ class InventoryServiceImplTest {
 
         when(inventoryRepository.findByProductId(productId)).thenReturn(Optional.of(Inventory.builder().build()));
 
-        assertThrows(IllegalArgumentException.class, () -> inventoryService.create(productId, req));
+        assertThrows(ConflictException.class, () -> inventoryService.create(productId, req));
         verify(inventoryRepository).findByProductId(productId);
         verifyNoInteractions(productRepository, inventoryMapper);
         verify(inventoryRepository, never()).save(any());
@@ -78,9 +81,9 @@ class InventoryServiceImplTest {
     void create_shouldRejectNegativeStocks() {
         UUID productId = UUID.randomUUID();
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(ValidationException.class,
                 () -> inventoryService.create(productId, new InventoryDtos.InventoryCreateRequest(-1, 1)));
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(ValidationException.class,
                 () -> inventoryService.create(productId, new InventoryDtos.InventoryCreateRequest(1, -1)));
     }
 
@@ -111,7 +114,7 @@ class InventoryServiceImplTest {
         UUID productId = UUID.randomUUID();
         when(inventoryRepository.findByProductId(productId)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> inventoryService.update(productId, new InventoryDtos.InventoryUpdateRequest(1, 1)));
     }
 
@@ -138,7 +141,7 @@ class InventoryServiceImplTest {
         UUID productId = UUID.randomUUID();
         when(inventoryRepository.findByProductId(productId)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> inventoryService.getByProduct(productId));
+        assertThrows(ResourceNotFoundException.class, () -> inventoryService.getByProduct(productId));
     }
 
     @Test
@@ -207,7 +210,7 @@ class InventoryServiceImplTest {
         var inv = Inventory.builder().availableStock(2).minimumStock(0).product(Product.builder().id(productId).build()).build();
         when(inventoryRepository.findByProductId(productId)).thenReturn(Optional.of(inv));
 
-        assertThrows(IllegalArgumentException.class, () -> inventoryService.adjustStock(productId, -3));
+        assertThrows(BusinessException.class, () -> inventoryService.adjustStock(productId, -3));
         verify(inventoryRepository, never()).save(any());
     }
 
@@ -228,7 +231,7 @@ class InventoryServiceImplTest {
         UUID inventoryId = UUID.randomUUID();
         when(inventoryRepository.findById(inventoryId)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> inventoryService.delete(inventoryId));
+        assertThrows(ResourceNotFoundException.class, () -> inventoryService.delete(inventoryId));
         verify(inventoryRepository, never()).delete(any());
     }
 }
