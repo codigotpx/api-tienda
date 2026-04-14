@@ -1,13 +1,13 @@
 package com.tienda.universitaria.api.service;
 
 import com.tienda.universitaria.api.api.dto.OrderStatusHistoryDtos;
+import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
 import com.tienda.universitaria.api.domain.entities.Order;
 import com.tienda.universitaria.api.domain.entities.OrderStatusHistory;
 import com.tienda.universitaria.api.domain.enums.OrderStatus;
 import com.tienda.universitaria.api.domain.repositories.OrderRepository;
 import com.tienda.universitaria.api.domain.repositories.OrderStatusHistoryRepository;
 import com.tienda.universitaria.api.service.mapper.OrderStatusHistoryMapper;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,15 +26,8 @@ public class OrderStatusHistoryServiceImpl implements OrderStatusHistoryService 
     @Override
     @Transactional(readOnly = true)
     public List<OrderStatusHistoryDtos.OrderStatusHistoryResponse> getByOrder(UUID orderId) {
-        if (orderId == null) {
-            throw new IllegalArgumentException("orderId must not be null");
-        }
-        if (!orderRepository.existsById(orderId)) {
-            throw new EntityNotFoundException("Order not found: " + orderId);
-        }
-
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
 
         return order.getOrderStatusHistory().stream()
                 .sorted((a, b) -> {
@@ -52,28 +45,16 @@ public class OrderStatusHistoryServiceImpl implements OrderStatusHistoryService 
             UUID orderId,
             OrderStatus previousStatus,
             OrderStatus newStatus,
-            OrderStatusHistoryDtos.OrderStatusHistoryCreateRequest req
-    ) {
-        if (orderId == null) {
-            throw new IllegalArgumentException("orderId must not be null");
-        }
-        if (newStatus == null) {
-            throw new IllegalArgumentException("newStatus must not be null");
-        }
-        if (req == null) {
-            throw new IllegalArgumentException("OrderStatusHistoryCreateRequest must not be null");
-        }
+            OrderStatusHistoryDtos.OrderStatusHistoryCreateRequest req) {
 
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
 
         OrderStatusHistory history = orderStatusHistoryMapper.toEntity(req);
         history.setOrder(order);
         history.setPreviousStatus(previousStatus);
         history.setNewStatus(newStatus);
 
-        OrderStatusHistory saved = orderStatusHistoryRepository.save(history);
-        return orderStatusHistoryMapper.toResponse(saved);
+        return orderStatusHistoryMapper.toResponse(orderStatusHistoryRepository.save(history));
     }
 }
-

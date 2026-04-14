@@ -1,6 +1,7 @@
 package com.tienda.universitaria.api.service;
 
 import com.tienda.universitaria.api.api.dto.ReportDtos;
+import com.tienda.universitaria.api.api.exception.ValidationException;
 import com.tienda.universitaria.api.domain.entities.Product;
 import com.tienda.universitaria.api.domain.repositories.InventoryRepository;
 import com.tienda.universitaria.api.domain.repositories.OrderItemsRepository;
@@ -45,15 +46,9 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public List<ReportDtos.BestSellingProductResponse> getBestSellingProducts(LocalDateTime from, LocalDateTime to) {
-        if (from == null) {
-            throw new IllegalArgumentException("from must not be null");
-        }
-        if (to == null) {
-            throw new IllegalArgumentException("to must not be null");
-        }
-        if (from.isAfter(to)) {
-            throw new IllegalArgumentException("from must be <= to");
-        }
+        if (from == null) throw new ValidationException("from must not be null");
+        if (to == null)   throw new ValidationException("to must not be null");
+        if (from.isAfter(to)) throw new ValidationException("from must be before or equal to to");
 
         return orderItemsRepository.findBestSellingProducts(from, to).stream()
                 .map(this::toBestSellingProduct)
@@ -115,7 +110,7 @@ public class ReportServiceImpl implements ReportService {
         if (v instanceof Long l) return Math.toIntExact(l);
         if (v instanceof Short s) return s.intValue();
         if (v instanceof Number n) return n.intValue();
-        throw new IllegalArgumentException("Expected number at index " + idx + " but got: " + v.getClass().getName());
+        throw new ValidationException("Expected number at index " + idx + " but got: " + v.getClass().getName());
     }
 
     private long toLong(Object[] row, int idx) {
@@ -125,7 +120,7 @@ public class ReportServiceImpl implements ReportService {
         if (v instanceof Integer i) return i.longValue();
         if (v instanceof Short s) return s.longValue();
         if (v instanceof Number n) return n.longValue();
-        throw new IllegalArgumentException("Expected number at index " + idx + " but got: " + v.getClass().getName());
+        throw new ValidationException("Expected number at index " + idx + " but got: " + v.getClass().getName());
     }
 
     private BigDecimal toBigDecimal(Object[] row, int idx) {
@@ -133,7 +128,7 @@ public class ReportServiceImpl implements ReportService {
         if (v == null) return BigDecimal.ZERO;
         if (v instanceof BigDecimal bd) return bd;
         if (v instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
-        throw new IllegalArgumentException("Expected BigDecimal/Number at index " + idx + " but got: " + v.getClass().getName());
+        throw new ValidationException("Expected BigDecimal/Number at index " + idx + " but got: " + v.getClass().getName());
     }
 }
 

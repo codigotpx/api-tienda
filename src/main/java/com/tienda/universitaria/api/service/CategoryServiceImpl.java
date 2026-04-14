@@ -1,10 +1,11 @@
 package com.tienda.universitaria.api.service;
 
 import com.tienda.universitaria.api.api.dto.CategoryDtos;
+import com.tienda.universitaria.api.api.exception.ConflictException;
+import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
 import com.tienda.universitaria.api.domain.entities.Category;
 import com.tienda.universitaria.api.domain.repositories.CategoryRepository;
 import com.tienda.universitaria.api.service.mapper.CategoryMapper;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,68 +22,40 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDtos.CategoryResponse create(CategoryDtos.CategoryCreateRequest req) {
-        if (req == null) {
-            throw new IllegalArgumentException("CategoryCreateRequest must not be null");
-        }
-        if (req.name() == null || req.name().isBlank()) {
-            throw new IllegalArgumentException("name must not be blank");
-        }
-        if (categoryRepository.existsByName(req.name())) {
-            throw new IllegalArgumentException("Category name already exists: " + req.name());
-        }
+        if (categoryRepository.existsByName(req.name()))
+            throw new ConflictException("Category name already exists: " + req.name());
 
-        Category category = categoryMapper.toEntity(req);
-        Category saved = categoryRepository.save(category);
-        return categoryMapper.toResponse(saved);
+        return categoryMapper.toResponse(categoryRepository.save(categoryMapper.toEntity(req)));
     }
 
     @Override
     public CategoryDtos.CategoryResponse update(UUID id, CategoryDtos.CategoryUpdateRequest req) {
-        if (id == null) {
-            throw new IllegalArgumentException("id must not be null");
-        }
-        if (req == null) {
-            throw new IllegalArgumentException("CategoryUpdateRequest must not be null");
-        }
-
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Category not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
 
         if (req.name() != null && !req.name().isBlank()) {
-            String newName = req.name();
-            String currentName = category.getName();
-            if (!newName.equalsIgnoreCase(currentName) && categoryRepository.existsByName(newName)) {
-                throw new IllegalArgumentException("Category name already exists: " + newName);
-            }
+            if (!req.name().equalsIgnoreCase(category.getName()) && categoryRepository.existsByName(req.name()))
+                throw new ConflictException("Category name already exists: " + req.name());
         }
 
         categoryMapper.patch(category, req);
-        Category saved = categoryRepository.save(category);
-        return categoryMapper.toResponse(saved);
+        return categoryMapper.toResponse(categoryRepository.save(category));
     }
 
     @Override
     @Transactional(readOnly = true)
     public CategoryDtos.CategoryResponse get(UUID id) {
-        if (id == null) {
-            throw new IllegalArgumentException("id must not be null");
-        }
-
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Category not found: " + id));
-        return categoryMapper.toResponse(category);
+        return categoryRepository.findById(id)
+                .map(categoryMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
     }
 
     @Override
     @Transactional(readOnly = true)
     public CategoryDtos.CategoryResponse getByName(String name) {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("name must not be blank");
-        }
-
-        Category category = categoryRepository.findByName(name)
-                .orElseThrow(() -> new EntityNotFoundException("Category not found for name: " + name));
-        return categoryMapper.toResponse(category);
+        return categoryRepository.findByName(name)
+                .map(categoryMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found for name: " + name));
     }
 
     @Override
@@ -95,13 +68,8 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void delete(UUID id) {
-        if (id == null) {
-            throw new IllegalArgumentException("id must not be null");
-        }
-
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Category not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
         categoryRepository.delete(category);
     }
 }
-
