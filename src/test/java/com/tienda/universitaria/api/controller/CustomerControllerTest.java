@@ -13,9 +13,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.UUID;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -23,6 +25,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 @WebMvcTest(CustomerController.class)
 public class CustomerControllerTest {
@@ -85,5 +89,62 @@ public class CustomerControllerTest {
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
 
+    @Test
+    void getAll_shouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(service.getAll()).thenReturn(List.of(new CustomerDtos.CustomerResponse(
+                id, "Camilo", "Cerpa", "cerpa@example.com", "123", CustomerStatus.ACTIVE
+        )));
+
+        mvc.perform(get("/api/customers"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(id.toString()));
+    }
+
+    @Test
+    void getByEmail_shouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(service.getByEmail("cerpa@example.com")).thenReturn(new CustomerDtos.CustomerResponse(
+                id, "Camilo", "Cerpa", "cerpa@example.com", "123", CustomerStatus.ACTIVE
+        ));
+
+        mvc.perform(get("/api/customers/search/by-email").param("email", "cerpa@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()));
+    }
+
+    @Test
+    void getByStatus_shouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(service.getByStatus(CustomerStatus.ACTIVE)).thenReturn(List.of(new CustomerDtos.CustomerResponse(
+                id, "Camilo", "Cerpa", "cerpa@example.com", "123", CustomerStatus.ACTIVE
+        )));
+
+        mvc.perform(get("/api/customers/search/by-status").param("status", "ACTIVE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(id.toString()));
+    }
+
+    @Test
+    void setStatus_shouldReturn200() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(service.setStatus(id, CustomerStatus.INACTIVE)).thenReturn(new CustomerDtos.CustomerResponse(
+                id, "Camilo", "Cerpa", "cerpa@example.com", "123", CustomerStatus.INACTIVE
+        ));
+
+        mvc.perform(patch("/api/customers/" + id + "/status").param("status", "INACTIVE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.status").value("INACTIVE"));
+    }
+
+    @Test
+    void delete_shouldReturn204() throws Exception {
+        UUID id = UUID.randomUUID();
+        doNothing().when(service).delete(id);
+
+        mvc.perform(delete("/api/customers/" + id))
+                .andExpect(status().isNoContent());
+    }
 
 }

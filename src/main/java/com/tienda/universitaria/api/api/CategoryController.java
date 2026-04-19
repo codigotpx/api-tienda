@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/controllers")
+@RequestMapping("/api/categories")
 @RequiredArgsConstructor
 @Validated
 public class CategoryController {
@@ -22,7 +22,7 @@ public class CategoryController {
     public ResponseEntity<CategoryResponse> create(@RequestBody CategoryCreateRequest req,
                                                    UriComponentsBuilder builder) {
         var categoryCreated = service.create(req);
-        var location = builder.path("/api/controllers/{id}").buildAndExpand(categoryCreated.id()).toUri();
+        var location = builder.path("/api/categories/{id}").buildAndExpand(categoryCreated.id()).toUri();
 
         return ResponseEntity.created(location).body(categoryCreated);
     }
@@ -38,8 +38,8 @@ public class CategoryController {
         return ResponseEntity.ok(service.get(id));
     }
 
-    @GetMapping("/{name}")
-    public ResponseEntity<CategoryResponse> getByName(@PathVariable String name) {
+    @GetMapping("/search/by-name")
+    public ResponseEntity<CategoryResponse> getByName(@RequestParam String name) {
         return ResponseEntity.ok(service.getByName(name));
     }
 
@@ -50,6 +50,7 @@ public class CategoryController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        service.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
