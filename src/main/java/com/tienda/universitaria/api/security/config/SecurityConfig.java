@@ -33,8 +33,47 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(authEntryPoint)
                         .accessDeniedHandler(accessDenied))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/register").permitAll()
+
+                        .requestMatchers("/api/auth/register/admin").hasRole("ADMIN")
+                        .requestMatchers("/api/auth/register/coordinator").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/api/customers").permitAll()
+
+                        .requestMatchers(HttpMethod.POST,   "/api/controllers/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT,    "/api/controllers/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/controllers/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,    "/api/controllers/**").authenticated()
+
+                        .requestMatchers(HttpMethod.POST,   "/api/products/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT,    "/api/products/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH,  "/api/products/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,    "/api/products/**").authenticated()
+
+                        .requestMatchers(HttpMethod.GET, "/api/inventories/**").hasAnyRole("ADMIN", "COORDINATOR")
+                        .requestMatchers("/api/inventories/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET,    "/api/customers/**").hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers(HttpMethod.PUT,    "/api/customers/**").hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers(HttpMethod.PATCH,  "/api/customers/**").hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers(HttpMethod.DELETE, "/api/customers/**").hasRole("ADMIN")
+                        .requestMatchers("/api/addresses/**").hasAnyRole("ADMIN", "CLIENT")
+
+                        .requestMatchers(HttpMethod.POST, "/api/orders").hasAnyRole("ADMIN", "CLIENT", "USER")
+
+                        .requestMatchers(HttpMethod.PATCH, "/api/orders/*/status").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/orders/**").hasAnyRole("ADMIN", "CLIENT")
+
+                        .requestMatchers("/api/orders/*/items/**").hasAnyRole("ADMIN", "CLIENT", "USER")
+                        .requestMatchers("/api/orderItems/**").hasAnyRole("ADMIN", "CLIENT", "USER")
+
+                        .requestMatchers(HttpMethod.GET, "/api/orders/*/history").hasAnyRole("ADMIN", "CLIENT")
+
+                        .requestMatchers("/api/reports/**").hasAnyRole("ADMIN", "COORDINATOR")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
