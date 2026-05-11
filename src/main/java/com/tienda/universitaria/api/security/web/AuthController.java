@@ -45,7 +45,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
         authManager.authenticate(new UsernamePasswordAuthenticationToken(req.email(), req.password()));
-        var user = users.findByEmailIgnoreCase(req.email()).orElseThrow();
+        var user = users.findByUsernameIgnoreCase(req.email()).orElseThrow();
         var principal = User.withUsername(user.getUsername())
                 .password(user.getPassword())
                 .authorities(user.getRoles().stream().map(Enum::name).toArray(String[]::new))
@@ -55,7 +55,7 @@ public class AuthController {
     }
 
     private ResponseEntity<AuthResponse> register(String email, String password, Set<Role> roles) {
-        if (users.existsByEmailIgnoreCase(email))
+        if (users.existsByUsernameIgnoreCase(email))
             return ResponseEntity.badRequest().build();
 
         var user = AppUser.builder()
