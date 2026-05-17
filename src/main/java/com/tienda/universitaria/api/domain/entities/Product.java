@@ -45,4 +45,8 @@ public class Product {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
-    private Set<OrderItem> orderItems = new HashSet<>();}
+    private Set<OrderItem> orderItems = new HashSet<>();
+
+    @Column(name = "image_url")
+    private String imageUrl;
+}
