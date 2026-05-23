@@ -10,10 +10,12 @@ public interface ProductMapper {
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "inventory", ignore = true)
     @Mapping(target = "orderItems", ignore = true)
+    @Mapping(target = "imageUrl", source = "imageUrl")
     Product toEntity(ProductCreateRequest req);
 
     @Mapping(target = "categoryId", source = "category.id")
     @Mapping(target = "categoryName", source = "category.name")
+    @Mapping(target = "imageUrl", source = "imageUrl")
     ProductResponse toResponse(Product entity);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
@@ -22,5 +24,6 @@ public interface ProductMapper {
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "inventory", ignore = true)
     @Mapping(target = "orderItems", ignore = true)
+    @Mapping(target = "imageUrl", source = "imageUrl")
     void patch(@MappingTarget Product target, ProductUpdateRequest changes);
 }

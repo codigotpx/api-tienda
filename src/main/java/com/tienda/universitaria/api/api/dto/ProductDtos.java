@@ -16,7 +16,8 @@ public class ProductDtos {
             String description,
             @NotNull @DecimalMin(value = "0.01", message = "Price must be greater than zero") BigDecimal price,
             @NotNull UUID categoryId,
-            Boolean active
+            Boolean active,
+            String imageUrl
     ) implements Serializable {}
 
     public record ProductUpdateRequest(
@@ -25,7 +26,8 @@ public class ProductDtos {
             String description,
             @DecimalMin(value = "0.01", message = "Price must be greater than zero") BigDecimal price,
             UUID categoryId,
-            Boolean active
+            Boolean active,
+            String imageUrl
     ) implements Serializable {}
 
     public record ProductResponse(
@@ -36,6 +38,7 @@ public class ProductDtos {
             BigDecimal price,
             Boolean active,
             UUID categoryId,
-            String categoryName
+            String categoryName,
+            String imageUrl
     ) implements Serializable {}
 }
