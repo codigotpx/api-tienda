@@ -25,7 +25,8 @@ class ProductMapperTest {
                 "Laptop gamer",
                 new BigDecimal("1234.56"),
                 categoryId,
-                true
+                true,
+                "http://img/laptop.jpg"
         ));
 
         assertNull(entity.getId());
@@ -38,6 +39,7 @@ class ProductMapperTest {
         assertEquals("Laptop gamer", entity.getDescription());
         assertEquals(new BigDecimal("1234.56"), entity.getPrice());
         assertTrue(entity.getActive());
+        assertEquals("http://img/laptop.jpg", entity.getImageUrl());
     }
 
     @Test
@@ -71,6 +73,7 @@ class ProductMapperTest {
         assertTrue(dto.active());
         assertEquals(categoryId, dto.categoryId());
         assertEquals("Tecnologia", dto.categoryName());
+        assertNull(dto.imageUrl());
     }
 
     @Test
@@ -100,7 +103,8 @@ class ProductMapperTest {
                 "New Desc",
                 null,
                 UUID.fromString("33333333-3333-3333-3333-333333333333"),
-                false
+                false,
+                "http://img/new.jpg"
         ));
 
         assertEquals(productId, target.getId());
@@ -110,6 +114,8 @@ class ProductMapperTest {
         assertEquals(new BigDecimal("10.00"), target.getPrice());
         assertFalse(target.getActive());
         assertSame(category, target.getCategory());
+        // SKU should not be overwritten by patch() mapper config; imageUrl should map when present.
+        assertEquals("http://img/new.jpg", target.getImageUrl());
     }
 }
 

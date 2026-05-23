@@ -48,7 +48,8 @@ class ProductServiceImplTest {
                 "Desc",
                 new BigDecimal("10.00"),
                 categoryId,
-                true
+                true,
+                "http://img/laptop.jpg"
         );
 
         var category = Category.builder().id(categoryId).name("Cat").build();
@@ -62,7 +63,8 @@ class ProductServiceImplTest {
                 new BigDecimal("10.00"),
                 true,
                 categoryId,
-                "Cat"
+                "Cat",
+                "http://img/laptop.jpg"
         );
 
         when(productRepository.findBySku("SKU-1")).thenReturn(Optional.empty());
@@ -91,7 +93,8 @@ class ProductServiceImplTest {
                 "Desc",
                 new BigDecimal("10.00"),
                 UUID.randomUUID(),
-                true
+                true,
+                null
         );
         when(productRepository.findBySku("SKU-1")).thenReturn(Optional.of(Product.builder().build()));
 
@@ -108,7 +111,8 @@ class ProductServiceImplTest {
                 "Desc",
                 BigDecimal.ZERO,
                 UUID.randomUUID(),
-                true
+                true,
+                null
         );
         when(productRepository.findBySku("SKU-1")).thenReturn(Optional.empty());
 
@@ -127,12 +131,13 @@ class ProductServiceImplTest {
                 null,
                 new BigDecimal("20.00"),
                 categoryId,
-                false
+                false,
+                null
         );
 
         var existing = Product.builder().id(productId).sku("SKU-1").active(true).build();
         var category = Category.builder().id(categoryId).build();
-        var expected = new ProductDtos.ProductResponse(productId, "SKU-1", "New", null, new BigDecimal("20.00"), false, categoryId, null);
+        var expected = new ProductDtos.ProductResponse(productId, "SKU-1", "New", null, new BigDecimal("20.00"), false, categoryId, null, null);
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(existing));
         when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
@@ -151,7 +156,7 @@ class ProductServiceImplTest {
     @Test
     void update_shouldRejectWhenPriceNotPositive() {
         UUID productId = UUID.randomUUID();
-        var req = new ProductDtos.ProductUpdateRequest(null, null, null, new BigDecimal("-1.00"), null, null);
+        var req = new ProductDtos.ProductUpdateRequest(null, null, null, new BigDecimal("-1.00"), null, null, null);
         assertThrows(ValidationException.class, () -> productService.update(productId, req));
         verifyNoInteractions(productRepository, categoryRepository, productMapper);
     }
@@ -185,7 +190,7 @@ class ProductServiceImplTest {
     void setActive_shouldAllowActivationEvenIfHasActiveOrders() {
         UUID productId = UUID.randomUUID();
         var product = Product.builder().id(productId).active(false).build();
-        var expected = new ProductDtos.ProductResponse(productId, "SKU", "N", "D", new BigDecimal("1.00"), true, UUID.randomUUID(), "C");
+        var expected = new ProductDtos.ProductResponse(productId, "SKU", "N", "D", new BigDecimal("1.00"), true, UUID.randomUUID(), "C", null);
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
         when(productRepository.save(product)).thenReturn(product);

@@ -8,12 +8,16 @@ import com.tienda.universitaria.api.security.repo.AppUserRepository;
 import com.tienda.universitaria.api.security.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseCookie;
 
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +32,15 @@ public class AuthController {
     private final AuthenticationManager authManager;
     private final JwtService jwt;
     private final AuthService authService;
+
+    @Value("${app.auth.cookie-name:ACCESS_TOKEN}")
+    private String authCookieName;
+
+    @Value("${app.auth.cookie-secure:false}")
+    private boolean authCookieSecure;
+
+    @Value("${app.auth.cookie-samesite:Lax}")
+    private String authCookieSameSite;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> registerClient(@Valid @RequestBody RegisterClientRequest req) {
@@ -59,7 +72,31 @@ public class AuthController {
                 .authorities(user.getRoles().stream().map(Enum::name).toArray(String[]::new))
                 .build();
         var token = jwt.generateToken(principal, Map.of("roles", user.getRoles()));
-        return ResponseEntity.ok(new AuthResponse(token, "Bearer", jwt.getExpirationSeconds()));
+
+        var cookie = buildAuthCookie(token, jwt.getExpirationSeconds());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(new AuthResponse(token, "Bearer", jwt.getExpirationSeconds()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        var cookie = clearAuthCookie();
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<MeResponse> me(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        var username = authentication.getName();
+        var roles = authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .collect(java.util.stream.Collectors.toSet());
+        return ResponseEntity.ok(new MeResponse(username, roles));
     }
 
     private ResponseEntity<AuthResponse> register(String email, String password, Set<Role> roles) {
@@ -79,6 +116,30 @@ public class AuthController {
                 .build();
 
         var token = jwt.generateToken(principal, Map.of("roles", roles));
-        return ResponseEntity.ok(new AuthResponse(token, "Bearer", jwt.getExpirationSeconds()));
+        var cookie = buildAuthCookie(token, jwt.getExpirationSeconds());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(new AuthResponse(token, "Bearer", jwt.getExpirationSeconds()));
+    }
+
+    private ResponseCookie buildAuthCookie(String token, long expiresInSeconds) {
+        // Cookie is HttpOnly so the frontend can't read it; browser sends it automatically.
+        return ResponseCookie.from(authCookieName, token)
+                .httpOnly(true)
+                .secure(authCookieSecure)
+                .sameSite(authCookieSameSite)
+                .path("/")
+                .maxAge(expiresInSeconds)
+                .build();
+    }
+
+    private ResponseCookie clearAuthCookie() {
+        return ResponseCookie.from(authCookieName, "")
+                .httpOnly(true)
+                .secure(authCookieSecure)
+                .sameSite(authCookieSameSite)
+                .path("/")
+                .maxAge(0)
+                .build();
     }
 }

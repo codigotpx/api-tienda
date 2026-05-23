@@ -6,6 +6,7 @@ import com.tienda.universitaria.api.security.jwt.JwtAuthenticationFilter;
 import com.tienda.universitaria.api.service.ProductService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ProductController.class)
+@AutoConfigureMockMvc(addFilters = false)
 public class ProductControllerTest {
 
     @Autowired MockMvc mvc;
@@ -45,10 +47,11 @@ public class ProductControllerTest {
                 "Agua 500ml",
                 new BigDecimal("2.50"),
                 categoryId,
-                true
+                true,
+                "http://img/agua.jpg"
         );
         var res = new ProductDtos.ProductResponse(id, "SKU-1", "Agua", "Agua 500ml",
-                new BigDecimal("2.50"), true, categoryId, "Bebidas");
+                new BigDecimal("2.50"), true, categoryId, "Bebidas", "http://img/agua.jpg");
 
         when(service.create(any())).thenReturn(res);
 
@@ -65,8 +68,8 @@ public class ProductControllerTest {
         UUID id = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
 
-        var req = new ProductDtos.ProductUpdateRequest("SKU-2", "Galletas", null, new BigDecimal("3.00"), categoryId, true);
-        var res = new ProductDtos.ProductResponse(id, "SKU-2", "Galletas", null, new BigDecimal("3.00"), true, categoryId, "Snacks");
+        var req = new ProductDtos.ProductUpdateRequest("SKU-2", "Galletas", null, new BigDecimal("3.00"), categoryId, true, null);
+        var res = new ProductDtos.ProductResponse(id, "SKU-2", "Galletas", null, new BigDecimal("3.00"), true, categoryId, "Snacks", null);
 
         when(service.update(eq(id), any())).thenReturn(res);
 
@@ -81,7 +84,7 @@ public class ProductControllerTest {
     @Test
     void get_shouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
-        var res = new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, UUID.randomUUID(), "Bebidas");
+        var res = new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, UUID.randomUUID(), "Bebidas", null);
 
         when(service.get(id)).thenReturn(res);
 
@@ -93,7 +96,7 @@ public class ProductControllerTest {
     @Test
     void getBySku_shouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
-        var res = new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, UUID.randomUUID(), "Bebidas");
+        var res = new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, UUID.randomUUID(), "Bebidas", null);
 
         when(service.getBySku("SKU-1")).thenReturn(res);
 
@@ -106,7 +109,7 @@ public class ProductControllerTest {
     void getAll_shouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
         var page = new PageImpl<>(
-                List.of(new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, UUID.randomUUID(), "Bebidas")),
+                List.of(new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, UUID.randomUUID(), "Bebidas", null)),
                 PageRequest.of(0, 10),
                 1
         );
@@ -122,7 +125,7 @@ public class ProductControllerTest {
     void getActive_shouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
         var page = new PageImpl<>(
-                List.of(new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, UUID.randomUUID(), "Bebidas")),
+                List.of(new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, UUID.randomUUID(), "Bebidas", null)),
                 PageRequest.of(0, 10),
                 1
         );
@@ -139,7 +142,7 @@ public class ProductControllerTest {
         UUID id = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
         var page = new PageImpl<>(
-                List.of(new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, categoryId, "Bebidas")),
+                List.of(new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, categoryId, "Bebidas", null)),
                 PageRequest.of(0, 10),
                 1
         );
@@ -155,7 +158,7 @@ public class ProductControllerTest {
     void getLowStock_shouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
         var page = new PageImpl<>(
-                List.of(new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, UUID.randomUUID(), "Bebidas")),
+                List.of(new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), true, UUID.randomUUID(), "Bebidas", null)),
                 PageRequest.of(0, 10),
                 1
         );
@@ -168,9 +171,9 @@ public class ProductControllerTest {
     }
 
     @Test
-    void setActive_shouldReturn200() throws Exception {
+        void setActive_shouldReturn200() throws Exception {
         UUID id = UUID.randomUUID();
-        var res = new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), false, UUID.randomUUID(), "Bebidas");
+        var res = new ProductDtos.ProductResponse(id, "SKU-1", "Agua", null, new BigDecimal("2.50"), false, UUID.randomUUID(), "Bebidas", null);
 
         when(service.setActive(id, false)).thenReturn(res);
 

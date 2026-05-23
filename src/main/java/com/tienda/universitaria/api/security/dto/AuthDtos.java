@@ -38,4 +38,9 @@ public class AuthDtos {
             String tokenType,
             long expiresInSeconds
     ) {}
+
+    public record MeResponse(
+            String username,
+            java.util.Set<String> roles
+    ) {}
 }

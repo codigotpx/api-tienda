@@ -8,6 +8,7 @@ import com.tienda.universitaria.api.service.CustomerService;
 import org.springframework.http.MediaType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -30,6 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 @WebMvcTest(CustomerController.class)
+@AutoConfigureMockMvc(addFilters = false)
 public class CustomerControllerTest {
 
     @Autowired
@@ -66,7 +68,7 @@ public class CustomerControllerTest {
         UUID id = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
 
         var req = new CustomerDtos.CustomerUpdateRequest("Camilo", "Andres",
-                "cerpacamilo3@gmail.com", "123456789");
+                "123456789", "cerpacamilo3@gmail.com");
 
         var res = new CustomerDtos.CustomerResponse(id, "Camilo", "Andres",
                 "cerpacamilo3@gmail.com", "123456789", CustomerStatus.ACTIVE);

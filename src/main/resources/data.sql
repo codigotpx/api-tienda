@@ -29,7 +29,15 @@ INSERT INTO categories (id, name, description) VALUES
 -- =============================================
 -- 2. PRODUCTOS (Camisetas, Jeans, Zapatos, Libros)
 -- =============================================
-INSERT INTO products (id, sku, name, description, price, active, category_id, image_url) VALUES
+-- Ensure the new column exists when seeding older databases.
+ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT;
+
+-- INSERT is intentionally commented out for local incremental runs.
+-- This seed file is often re-applied to an existing DB where product UUIDs differ,
+-- and re-inserting can violate UNIQUE constraints on (id) and (sku).
+-- If you need a full seed from scratch, start with an empty DB volume.
+-- INSERT INTO products (id, sku, name, description, price, active, category_id, image_url) VALUES
+/*
                                                                                   -- Ropa
                                                                                   ('22222222-0000-0000-0000-000000000001'::uuid, 'SKU-ROPA-001', 'Camiseta Algodón Premium', 'Camiseta 100% algodón, azul', 29.99, true, '11111111-0000-0000-0000-000000000001'::uuid, 'http://localhost:8080/images/camiseta-algodon-premium.jpg'),
                                                                                   ('22222222-0000-0000-0000-000000000007'::uuid, 'SKU-ROPA-005', 'Camiseta Polo Clásica', 'Camiseta tipo polo con cuello, 100% algodón', 35.00, true, '11111111-0000-0000-0000-000000000001'::uuid, 'http://localhost:8080/images/camiseta-polo-clasica.jpg'),
@@ -43,7 +51,28 @@ INSERT INTO products (id, sku, name, description, price, active, category_id, im
                                                                                   -- Libros
                                                                                   ('22222222-0000-0000-0000-000000000005'::uuid, 'SKU-LIB-001', 'Clean Code', 'Robert C. Martin - Manual de agilidad de software', 45.00, true, '11111111-0000-0000-0000-000000000002'::uuid, 'http://localhost:8080/images/clean-code.jpg'),
                                                                                   ('22222222-0000-0000-0000-000000000006'::uuid, 'SKU-LIB-002', 'The Pragmatic Programmer', 'Andrew Hunt - Tu camino a la maestría', 48.50, true, '11111111-0000-0000-0000-000000000002'::uuid, 'http://localhost:8080/images/the-pragmatic-programmer.jpg')
-    ON CONFLICT (sku) DO NOTHING;
+    ON CONFLICT (id) DO UPDATE SET
+        sku = EXCLUDED.sku,
+        name = EXCLUDED.name,
+        description = EXCLUDED.description,
+        price = EXCLUDED.price,
+        active = EXCLUDED.active,
+        category_id = EXCLUDED.category_id,
+        image_url = EXCLUDED.image_url;
+*/
+
+-- Apply the new column values to an existing DB without touching IDs.
+UPDATE products SET image_url = 'http://localhost:8080/images/camiseta-algodon-premium.jpg' WHERE sku = 'SKU-ROPA-001';
+UPDATE products SET image_url = 'http://localhost:8080/images/camiseta-polo-clasica.jpg' WHERE sku = 'SKU-ROPA-005';
+UPDATE products SET image_url = 'http://localhost:8080/images/camiseta-oversize.jpg' WHERE sku = 'SKU-ROPA-006';
+UPDATE products SET image_url = 'http://localhost:8080/images/jeans-slim-fit.jpg' WHERE sku = 'SKU-ROPA-002';
+UPDATE products SET image_url = 'http://localhost:8080/images/jean-negro-regular.jpg' WHERE sku = 'SKU-ROPA-007';
+UPDATE products SET image_url = 'http://localhost:8080/images/jean-azul-ripped.jpg' WHERE sku = 'SKU-ROPA-008';
+UPDATE products SET image_url = 'http://localhost:8080/images/zapatos-casuales.jpg' WHERE sku = 'SKU-ROPA-003';
+UPDATE products SET image_url = 'http://localhost:8080/images/zapatos-deportivos.jpg' WHERE sku = 'SKU-ROPA-004';
+UPDATE products SET image_url = 'http://localhost:8080/images/zapato-vestir-oxford.jpg' WHERE sku = 'SKU-ROPA-009';
+UPDATE products SET image_url = 'http://localhost:8080/images/clean-code.jpg' WHERE sku = 'SKU-LIB-001';
+UPDATE products SET image_url = 'http://localhost:8080/images/the-pragmatic-programmer.jpg' WHERE sku = 'SKU-LIB-002';
 
 -- =============================================
 -- 3. CLIENTES
