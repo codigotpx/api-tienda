@@ -4,6 +4,7 @@ import com.tienda.universitaria.api.api.OrderController;
 import com.tienda.universitaria.api.api.dto.OrderDtos;
 import com.tienda.universitaria.api.api.dto.OrderItemDtos;
 import com.tienda.universitaria.api.domain.enums.OrderStatus;
+import com.tienda.universitaria.api.security.jwt.JwtAuthenticationFilter;
 import com.tienda.universitaria.api.service.OrderService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,7 @@ public class OrderControllerTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper om;
     @MockitoBean OrderService service;
+    @MockitoBean JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     void create_shouldReturn201AndLocation() throws Exception {

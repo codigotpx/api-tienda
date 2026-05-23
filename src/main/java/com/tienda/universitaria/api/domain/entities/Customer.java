@@ -1,6 +1,7 @@
 package com.tienda.universitaria.api.domain.entities;
 
 import com.tienda.universitaria.api.domain.enums.CustomerStatus;
+import com.tienda.universitaria.api.security.domain.AppUser;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,6 +20,11 @@ public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    // Link to the authenticated identity (login/roles). Nullable for legacy rows; new registrations should set it.
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true)
+    private AppUser user;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;

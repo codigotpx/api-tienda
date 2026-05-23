@@ -10,6 +10,7 @@ public interface CustomerMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "addresses", ignore = true)
     @Mapping(target = "orders", ignore = true)
+    @Mapping(target = "user", ignore = true)
     Customer toEntity(CustomerCreateRequest req);
 
     CustomerResponse toResponse(Customer entity);
@@ -19,6 +20,7 @@ public interface CustomerMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "addresses", ignore = true)
     @Mapping(target = "orders", ignore = true)
+    @Mapping(target = "user", ignore = true)
     void patch(@MappingTarget Customer target , CustomerUpdateRequest changes);
 
 

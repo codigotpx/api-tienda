@@ -3,6 +3,7 @@ package com.tienda.universitaria.api.controller;
 import com.tienda.universitaria.api.api.OrderStatusHistoryController;
 import com.tienda.universitaria.api.api.dto.OrderStatusHistoryDtos;
 import com.tienda.universitaria.api.domain.enums.OrderStatus;
+import com.tienda.universitaria.api.security.jwt.JwtAuthenticationFilter;
 import com.tienda.universitaria.api.service.OrderStatusHistoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ public class OrderStatusHistoryControllerTest {
 
     @Autowired MockMvc mvc;
     @MockitoBean OrderStatusHistoryService service;
+    @MockitoBean JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     void getByOrder_shouldReturn200() throws Exception {

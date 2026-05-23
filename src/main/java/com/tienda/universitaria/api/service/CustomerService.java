@@ -15,6 +15,10 @@ public interface CustomerService {
 
     CustomerDtos.CustomerResponse getByEmail(String email);
 
+    CustomerDtos.CustomerResponse me();
+
+    CustomerDtos.CustomerResponse updateMe(CustomerDtos.CustomerUpdateRequest req);
+
     List<CustomerDtos.CustomerResponse> getAll();
 
     List<CustomerDtos.CustomerResponse> getByStatus(CustomerStatus status);

@@ -3,6 +3,7 @@ package com.tienda.universitaria.api.controller;
 import com.tienda.universitaria.api.api.CustomerController;
 import com.tienda.universitaria.api.api.dto.CustomerDtos;
 import com.tienda.universitaria.api.domain.enums.CustomerStatus;
+import com.tienda.universitaria.api.security.jwt.JwtAuthenticationFilter;
 import com.tienda.universitaria.api.service.CustomerService;
 import org.springframework.http.MediaType;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,10 @@ public class CustomerControllerTest {
     ObjectMapper om;
     @MockitoBean
     CustomerService service;
+
+    // Avoid loading the real JWT filter (and its dependencies) in WebMvcTest slices.
+    @MockitoBean
+    JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     void create_shouldReturn201AndLocation() throws Exception {

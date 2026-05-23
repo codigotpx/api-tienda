@@ -5,6 +5,7 @@ import com.tienda.universitaria.api.domain.enums.CustomerStatus;
 import com.tienda.universitaria.api.service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -20,7 +21,7 @@ public class CustomerController {
     private final CustomerService service;
 
     @PostMapping
-    public ResponseEntity<CustomerResponse> create(@RequestBody CustomerCreateRequest req,
+    public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerCreateRequest req,
                                                    UriComponentsBuilder builder) {
         var customerCreated = service.create(req);
         var location = builder.path("/api/customers/{id}").buildAndExpand(customerCreated.id()).toUri();
@@ -29,7 +30,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CustomerResponse> update(@PathVariable UUID id, @RequestBody CustomerUpdateRequest req) {
+    public ResponseEntity<CustomerResponse> update(@PathVariable UUID id, @Valid @RequestBody CustomerUpdateRequest req) {
         return ResponseEntity.ok(service.update(id, req));
     }
 
@@ -46,6 +47,16 @@ public class CustomerController {
     @GetMapping("/search/by-email")
     public ResponseEntity<CustomerResponse> getByEmail(@RequestParam String email) {
         return ResponseEntity.ok(service.getByEmail(email));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<CustomerResponse> me() {
+        return ResponseEntity.ok(service.me());
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<CustomerResponse> updateMe(@Valid @RequestBody CustomerUpdateRequest req) {
+        return ResponseEntity.ok(service.updateMe(req));
     }
 
     @GetMapping("/search/by-status")

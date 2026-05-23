@@ -5,6 +5,7 @@ import com.tienda.universitaria.api.security.domain.Role;
 import com.tienda.universitaria.api.security.dto.AuthDtos.*;
 import com.tienda.universitaria.api.security.jwt.JwtService;
 import com.tienda.universitaria.api.security.repo.AppUserRepository;
+import com.tienda.universitaria.api.security.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,10 +27,17 @@ public class AuthController {
     private final BCryptPasswordEncoder encoder;
     private final AuthenticationManager authManager;
     private final JwtService jwt;
+    private final AuthService authService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> registerClient(@Valid @RequestBody RegisterClientRequest req) {
         return register(req.email(), req.password(), Set.of(Role.ROLE_CLIENT));
+    }
+
+    // Professional client signup: creates AppUser + Customer profile in one transaction.
+    @PostMapping("/register/client")
+    public ResponseEntity<AuthResponse> registerClientWithProfile(@Valid @RequestBody RegisterClientWithProfileRequest req) {
+        return ResponseEntity.ok(authService.registerClientWithProfile(req));
     }
 
     @PostMapping("/register/admin")

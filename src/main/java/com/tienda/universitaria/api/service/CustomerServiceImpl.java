@@ -8,6 +8,7 @@ import com.tienda.universitaria.api.service.mapper.CustomerMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.UUID;
@@ -86,6 +87,44 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = customerRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found for email: " + email));
         return customerMapper.toResponse(customer);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerDtos.CustomerResponse me() {
+        String email = currentUsername();
+        return getByEmail(email);
+    }
+
+    @Override
+    public CustomerDtos.CustomerResponse updateMe(CustomerDtos.CustomerUpdateRequest req) {
+        if (req == null) {
+            throw new ValidationException("CustomerUpdateRequest must not be null");
+        }
+
+        String email = currentUsername();
+        Customer customer = customerRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found for email: " + email));
+
+        // Don't allow clients to change their email here (it is the login username too). Admin can use update(id,...)
+        var sanitized = new CustomerDtos.CustomerUpdateRequest(
+                req.firstName(),
+                req.lastName(),
+                req.phone(),
+                null
+        );
+
+        customerMapper.patch(customer, sanitized);
+        Customer saved = customerRepository.save(customer);
+        return customerMapper.toResponse(saved);
+    }
+
+    private static String currentUsername() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
+            throw new ValidationException("Not authenticated");
+        }
+        return auth.getName();
     }
 
     @Override

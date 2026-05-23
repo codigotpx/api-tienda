@@ -2,6 +2,7 @@ package com.tienda.universitaria.api.controller;
 
 import com.tienda.universitaria.api.api.ReportController;
 import com.tienda.universitaria.api.api.dto.ReportDtos;
+import com.tienda.universitaria.api.security.jwt.JwtAuthenticationFilter;
 import com.tienda.universitaria.api.service.ReportService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ public class ReportControllerTest {
 
     @Autowired MockMvc mvc;
     @MockitoBean ReportService service;
+    @MockitoBean JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     void getMonthlyIncome_shouldReturn200() throws Exception {
@@ -76,4 +78,3 @@ public class ReportControllerTest {
                 .andExpect(jsonPath("$[0].productId").value(productId.toString()));
     }
 }
-

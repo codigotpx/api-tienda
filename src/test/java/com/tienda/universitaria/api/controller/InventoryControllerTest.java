@@ -2,6 +2,7 @@ package com.tienda.universitaria.api.controller;
 
 import com.tienda.universitaria.api.api.InventoryController;
 import com.tienda.universitaria.api.api.dto.InventoryDtos;
+import com.tienda.universitaria.api.security.jwt.JwtAuthenticationFilter;
 import com.tienda.universitaria.api.service.InventoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,7 @@ public class InventoryControllerTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper om;
     @MockitoBean InventoryService service;
+    @MockitoBean JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     void create_shouldReturn201AndLocation() throws Exception {
@@ -147,4 +149,3 @@ public class InventoryControllerTest {
                 .andExpect(status().isNoContent());
     }
 }
-

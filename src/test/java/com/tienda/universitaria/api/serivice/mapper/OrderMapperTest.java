@@ -9,10 +9,11 @@ import com.tienda.universitaria.api.domain.entities.OrderItem;
 import com.tienda.universitaria.api.domain.entities.Product;
 import com.tienda.universitaria.api.domain.enums.OrderStatus;
 import com.tienda.universitaria.api.service.mapper.OrderMapper;
+import com.tienda.universitaria.api.service.mapper.OrderItemMapper;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mapstruct.factory.Mappers;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,10 +22,23 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
 class OrderMapperTest {
-    @Autowired
-    private OrderMapper mapper;
+    private final OrderMapper mapper = newMapperWithDependencies();
+
+    private static OrderMapper newMapperWithDependencies() {
+        // MapStruct generated implementations use Spring injection (componentModel = "spring"),
+        // so when we instantiate them directly for unit tests we must wire their collaborators manually.
+        var mapper = new com.tienda.universitaria.api.service.mapper.OrderMapperImpl();
+        OrderItemMapper itemMapper = Mappers.getMapper(OrderItemMapper.class);
+        try {
+            Field f = com.tienda.universitaria.api.service.mapper.OrderMapperImpl.class.getDeclaredField("orderItemMapper");
+            f.setAccessible(true);
+            f.set(mapper, itemMapper);
+            return mapper;
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Test
     void toEntity_shouldMapCreate_andIgnoreRelations() {

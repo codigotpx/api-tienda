@@ -10,6 +10,14 @@ public class AuthDtos {
             @NotBlank String password
     ) {}
 
+    public record RegisterClientWithProfileRequest(
+            @Email @NotBlank String email,
+            @NotBlank String password,
+            @NotBlank String firstName,
+            @NotBlank String lastName,
+            @NotBlank String phone
+    ) {}
+
     public record RegisterAdminRequest(
             @Email @NotBlank String email,
             @NotBlank String password

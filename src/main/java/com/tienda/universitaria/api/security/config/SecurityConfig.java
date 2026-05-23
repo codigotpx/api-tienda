@@ -35,11 +35,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/register/client").permitAll()
 
                         .requestMatchers("/api/auth/register/admin").hasRole("ADMIN")
                         .requestMatchers("/api/auth/register/coordinator").hasRole("ADMIN")
 
-                        .requestMatchers(HttpMethod.POST, "/api/customers").permitAll()
+                        // Customer profiles should not be created publicly; use /api/auth/register/client instead.
+                        .requestMatchers(HttpMethod.POST, "/api/customers").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.POST,   "/api/controllers/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT,    "/api/controllers/**").hasRole("ADMIN")

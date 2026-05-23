@@ -2,6 +2,7 @@ package com.tienda.universitaria.api.controller;
 
 import com.tienda.universitaria.api.api.OrderItemsController;
 import com.tienda.universitaria.api.api.dto.OrderItemDtos;
+import com.tienda.universitaria.api.security.jwt.JwtAuthenticationFilter;
 import com.tienda.universitaria.api.service.OrderItemService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ public class OrderItemsControllerTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper om;
     @MockitoBean OrderItemService service;
+    @MockitoBean JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     void getByOrder_shouldReturn200() throws Exception {
@@ -98,4 +100,3 @@ public class OrderItemsControllerTest {
                 .andExpect(status().isNoContent());
     }
 }
-

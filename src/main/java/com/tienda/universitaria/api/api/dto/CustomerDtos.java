@@ -11,7 +11,7 @@ public class CustomerDtos {
     public record CustomerCreateRequest(
             @NotBlank String firstName,
             @NotBlank String lastName,
-            String phone,
+            @NotBlank String phone,
             @NotBlank @Email String email
     ) implements Serializable {}
 
