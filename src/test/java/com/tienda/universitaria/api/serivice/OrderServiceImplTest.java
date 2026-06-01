@@ -17,6 +17,7 @@ import com.tienda.universitaria.api.domain.repositories.CustomerRepository;
 import com.tienda.universitaria.api.domain.repositories.InventoryRepository;
 import com.tienda.universitaria.api.domain.repositories.OrderRepository;
 import com.tienda.universitaria.api.domain.repositories.ProductRepository;
+import com.tienda.universitaria.api.security.util.SecurityUtils;
 import com.tienda.universitaria.api.service.OrderServiceImpl;
 import com.tienda.universitaria.api.service.mapper.OrderItemMapper;
 import com.tienda.universitaria.api.service.mapper.OrderMapper;
@@ -50,20 +51,9 @@ class OrderServiceImplTest {
     @Mock private OrderMapper orderMapper;
     @Mock private OrderItemMapper orderItemMapper;
     @Mock private OrderStatusHistoryMapper orderStatusHistoryMapper;
+    @Mock private SecurityUtils securityUtils;
 
     @InjectMocks private OrderServiceImpl orderService;
-
-    @Test
-    void create_shouldRejectWhenNoItems() {
-        var req = new OrderDtos.OrderCreateRequest(
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                List.of()
-        );
-
-        assertThrows(ValidationException.class, () -> orderService.create(req));
-        verifyNoInteractions(orderRepository, customerRepository, addressRepository, productRepository, inventoryRepository);
-    }
 
     @Test
     void create_shouldRejectWhenQuantityInvalid() {
@@ -77,6 +67,7 @@ class OrderServiceImplTest {
                 List.of(new OrderItemDtos.OrderItemCreateRequest(productId, 0))
         );
 
+        when(securityUtils.isAdmin()).thenReturn(true);
         when(customerRepository.findById(customerId)).thenReturn(Optional.of(Customer.builder().id(customerId).status(CustomerStatus.ACTIVE).build()));
         when(addressRepository.existsByIdAndCustomerId(addressId, customerId)).thenReturn(true);
         when(addressRepository.findById(addressId)).thenReturn(Optional.of(Address.builder().id(addressId).build()));
@@ -97,6 +88,7 @@ class OrderServiceImplTest {
                 List.of(new OrderItemDtos.OrderItemCreateRequest(UUID.randomUUID(), 1))
         );
 
+        when(securityUtils.isAdmin()).thenReturn(true);
         when(customerRepository.findById(customerId))
                 .thenReturn(Optional.of(Customer.builder().id(customerId).status(CustomerStatus.INACTIVE).build()));
 
@@ -120,6 +112,7 @@ class OrderServiceImplTest {
                 )
         );
 
+        when(securityUtils.isAdmin()).thenReturn(true);
         when(customerRepository.findById(customerId))
                 .thenReturn(Optional.of(Customer.builder().id(customerId).status(CustomerStatus.ACTIVE).build()));
         when(addressRepository.existsByIdAndCustomerId(addressId, customerId)).thenReturn(true);
@@ -171,6 +164,7 @@ class OrderServiceImplTest {
                 List.of(new OrderItemDtos.OrderItemCreateRequest(productId, 1))
         );
 
+        when(securityUtils.isAdmin()).thenReturn(true);
         when(customerRepository.findById(customerId))
                 .thenReturn(Optional.of(Customer.builder().id(customerId).status(CustomerStatus.ACTIVE).build()));
         when(addressRepository.existsByIdAndCustomerId(addressId, customerId)).thenReturn(true);

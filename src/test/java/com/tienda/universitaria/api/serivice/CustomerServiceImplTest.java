@@ -5,6 +5,7 @@ import com.tienda.universitaria.api.api.exception.ConflictException;
 import com.tienda.universitaria.api.domain.entities.Customer;
 import com.tienda.universitaria.api.domain.enums.CustomerStatus;
 import com.tienda.universitaria.api.domain.repositories.CustomerRepository;
+import com.tienda.universitaria.api.security.util.SecurityUtils;
 import com.tienda.universitaria.api.service.CustomerServiceImpl;
 import com.tienda.universitaria.api.service.mapper.CustomerMapper;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,9 @@ public class CustomerServiceImplTest {
 
     @Mock
     private CustomerMapper customerMapper;
+
+    @Mock
+    private SecurityUtils securityUtils;
 
     @InjectMocks
     CustomerServiceImpl customerServiceImpl;
@@ -95,6 +99,7 @@ public class CustomerServiceImplTest {
         var customer = Customer.builder().id(id).email("a@b.com").firstName("A").lastName("B").phone("1").status(CustomerStatus.ACTIVE).build();
         var expected = new CustomerDtos.CustomerResponse(id, "A", "B", "a@b.com", "1", CustomerStatus.ACTIVE);
 
+        when(securityUtils.isAdmin()).thenReturn(true);
         when(customerRepository.findById(id)).thenReturn(Optional.of(customer));
         when(customerMapper.toResponse(customer)).thenReturn(expected);
 
@@ -112,6 +117,7 @@ public class CustomerServiceImplTest {
         var req = new CustomerDtos.CustomerUpdateRequest("New", null, null, "new@test.com");
         var expected = new CustomerDtos.CustomerResponse(id, "New", "Name", "new@test.com", "1", CustomerStatus.ACTIVE);
 
+        when(securityUtils.isAdmin()).thenReturn(true);
         when(customerRepository.findById(id)).thenReturn(Optional.of(existing));
         when(customerRepository.existsByEmail("new@test.com")).thenReturn(false);
         when(customerRepository.save(existing)).thenReturn(existing);
@@ -132,6 +138,7 @@ public class CustomerServiceImplTest {
         var existing = Customer.builder().id(id).email("old@test.com").firstName("Old").lastName("Name").phone("1").status(CustomerStatus.ACTIVE).build();
         var req = new CustomerDtos.CustomerUpdateRequest(null, null, null, "new@test.com");
 
+        when(securityUtils.isAdmin()).thenReturn(true);
         when(customerRepository.findById(id)).thenReturn(Optional.of(existing));
         when(customerRepository.existsByEmail("new@test.com")).thenReturn(true);
 
