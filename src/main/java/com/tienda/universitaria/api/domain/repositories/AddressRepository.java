@@ -2,6 +2,7 @@ package com.tienda.universitaria.api.domain.repositories;
 
 import com.tienda.universitaria.api.domain.entities.Address;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.UUID;

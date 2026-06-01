@@ -17,5 +17,4 @@ public interface AddressMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "customer", ignore = true)
     void patch(@MappingTarget Address target, AddressUpdateRequest changes);
-
 }

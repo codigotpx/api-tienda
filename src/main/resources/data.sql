@@ -1,123 +1,320 @@
 SET client_encoding = 'UTF8';
 
 -- =============================================
--- 0. USUARIO ADMIN (password: Admin1234!)
+-- LIMPIEZA: eliminar datos existentes en orden
 -- =============================================
-DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE username = 'admin@tienda.com');
-DELETE FROM users WHERE username = 'admin@tienda.com';
-
-INSERT INTO users (id, username, password, enabled, account_non_locked)
-VALUES (
-           'aaaaaaaa-0000-0000-0000-000000000001'::uuid,
-           'admin@tienda.com',
-           '$2b$10$QoQiv04y8Th91/Fp8/i1xOu8gQ61mbaRtFIqYQN5Kf8wrMMQPQNzq',
-           true,
-           true
-       );
-
-INSERT INTO user_roles (user_id, role)
-VALUES ('aaaaaaaa-0000-0000-0000-000000000001'::uuid, 'ROLE_ADMIN');
+DELETE FROM order_status_history;
+DELETE FROM order_items;
+DELETE FROM orders;
+DELETE FROM inventories;
+DELETE FROM addresses;
+DELETE FROM customers;
+DELETE FROM products;
+DELETE FROM categories;
+DELETE FROM user_roles;
+DELETE FROM users;
 
 -- =============================================
--- 1. CATEGORIAS (Ropa y Libros)
+-- 0. USUARIOS (AppUser)
+--    password para todos: Admin1234!
+-- =============================================
+INSERT INTO users (id, username, password, enabled, account_non_locked) VALUES
+    ('aaaaaaaa-0000-0000-0000-000000000001'::uuid, 'admin@tienda.com',        '$2b$10$QoQiv04y8Th91/Fp8/i1xOu8gQ61mbaRtFIqYQN5Kf8wrMMQPQNzq', true, true),
+    ('aaaaaaaa-0000-0000-0000-000000000002'::uuid, 'carlos@email.com',        '$2b$10$QoQiv04y8Th91/Fp8/i1xOu8gQ61mbaRtFIqYQN5Kf8wrMMQPQNzq', true, true),
+    ('aaaaaaaa-0000-0000-0000-000000000003'::uuid, 'ana@email.com',           '$2b$10$QoQiv04y8Th91/Fp8/i1xOu8gQ61mbaRtFIqYQN5Kf8wrMMQPQNzq', true, true),
+    ('aaaaaaaa-0000-0000-0000-000000000004'::uuid, 'coordinador@tienda.com',  '$2b$10$QoQiv04y8Th91/Fp8/i1xOu8gQ61mbaRtFIqYQN5Kf8wrMMQPQNzq', true, true),
+    ('aaaaaaaa-0000-0000-0000-000000000005'::uuid, 'usuario@tienda.com',      '$2b$10$QoQiv04y8Th91/Fp8/i1xOu8gQ61mbaRtFIqYQN5Kf8wrMMQPQNzq', true, true);
+
+INSERT INTO user_roles (user_id, role) VALUES
+    ('aaaaaaaa-0000-0000-0000-000000000001'::uuid, 'ROLE_ADMIN'),
+    ('aaaaaaaa-0000-0000-0000-000000000002'::uuid, 'ROLE_CLIENT'),
+    ('aaaaaaaa-0000-0000-0000-000000000003'::uuid, 'ROLE_CLIENT'),
+    ('aaaaaaaa-0000-0000-0000-000000000004'::uuid, 'ROLE_COORDINATOR'),
+    ('aaaaaaaa-0000-0000-0000-000000000005'::uuid, 'ROLE_USER');
+
+-- =============================================
+-- 1. CATEGORIAS (5)
 -- =============================================
 INSERT INTO categories (id, name, description) VALUES
-                                                   ('11111111-0000-0000-0000-000000000001'::uuid, 'Ropa', 'Incluye camisetas, jeans y zapatos'),
-                                                   ('11111111-0000-0000-0000-000000000002'::uuid, 'Libros', 'Libros de programación y literatura')
-    ON CONFLICT (name) DO NOTHING;
+    ('11111111-0000-0000-0000-000000000001'::uuid, 'Ropa',        'Camisetas, jeans, zapatos y chaquetas'),
+    ('11111111-0000-0000-0000-000000000002'::uuid, 'Libros',      'Libros de programación y tecnología'),
+    ('11111111-0000-0000-0000-000000000003'::uuid, 'Accesorios',  'Relojes, mochilas, cinturones y más'),
+    ('11111111-0000-0000-0000-000000000004'::uuid, 'Electrónica', 'Audífonos, cargadores, teclados y parlantes'),
+    ('11111111-0000-0000-0000-000000000005'::uuid, 'Hogar',       'Lámparas, cojines, organización y decoración');
 
 -- =============================================
--- 2. PRODUCTOS (Camisetas, Jeans, Zapatos, Libros)
+-- 2. PRODUCTOS (25, image_url = NULL)
 -- =============================================
--- Ensure the new column exists when seeding older databases.
 ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT;
 
--- INSERT is intentionally commented out for local incremental runs.
--- This seed file is often re-applied to an existing DB where product UUIDs differ,
--- and re-inserting can violate UNIQUE constraints on (id) and (sku).
--- If you need a full seed from scratch, start with an empty DB volume.
--- INSERT INTO products (id, sku, name, description, price, active, category_id, image_url) VALUES
-/*
-                                                                                  -- Ropa
-                                                                                  ('22222222-0000-0000-0000-000000000001'::uuid, 'SKU-ROPA-001', 'Camiseta Algodón Premium', 'Camiseta 100% algodón, azul', 29.99, true, '11111111-0000-0000-0000-000000000001'::uuid, 'http://localhost:8080/images/camiseta-algodon-premium.jpg'),
-                                                                                  ('22222222-0000-0000-0000-000000000007'::uuid, 'SKU-ROPA-005', 'Camiseta Polo Clásica', 'Camiseta tipo polo con cuello, 100% algodón', 35.00, true, '11111111-0000-0000-0000-000000000001'::uuid, 'http://localhost:8080/images/camiseta-polo-clasica.jpg'),
-                                                                                  ('22222222-0000-0000-0000-000000000008'::uuid, 'SKU-ROPA-006', 'Camiseta Oversize', 'Corte ancho de tendencia, color gris jaspe', 32.50, true, '11111111-0000-0000-0000-000000000001'::uuid, 'http://localhost:8080/images/camiseta-oversize.jpg'),
-                                                                                  ('22222222-0000-0000-0000-000000000002'::uuid, 'SKU-ROPA-002', 'Jeans Slim Fit', 'Pantalón vaquero corte moderno', 69.99, true, '11111111-0000-0000-0000-000000000001'::uuid, 'http://localhost:8080/images/jeans-slim-fit.jpg'),
-                                                                                  ('22222222-0000-0000-0000-000000000009'::uuid, 'SKU-ROPA-007', 'Jean Negro Regular', 'Jean color negro sólido, corte recto tradicional', 75.00, true, '11111111-0000-0000-0000-000000000001'::uuid, 'http://localhost:8080/images/jean-negro-regular.jpg'),
-                                                                                  ('22222222-0000-0000-0000-000000000010'::uuid, 'SKU-ROPA-008', 'Jean Azul Ripped', 'Jean azul con detalles desgastados y rotos', 79.90, true, '11111111-0000-0000-0000-000000000001'::uuid, 'http://localhost:8080/images/jean-azul-ripped.jpg'),
-                                                                                  ('22222222-0000-0000-0000-000000000003'::uuid, 'SKU-ROPA-003', 'Zapatos Casuales', 'Calzado de cuero sintético cómodo', 89.90, true, '11111111-0000-0000-0000-000000000001'::uuid, 'http://localhost:8080/images/zapatos-casuales.jpg'),
-                                                                                  ('22222222-0000-0000-0000-000000000004'::uuid, 'SKU-ROPA-004', 'Zapatos Deportivos', 'Zapatillas para correr con amortiguación', 110.00, true, '11111111-0000-0000-0000-000000000001'::uuid, 'http://localhost:8080/images/zapatos-deportivos.jpg'),
-                                                                                  ('22222222-0000-0000-0000-000000000011'::uuid, 'SKU-ROPA-009', 'Zapato de Vestir Oxford', 'Calzado formal de cuero negro con cordones', 120.00, true, '11111111-0000-0000-0000-000000000001'::uuid, 'http://localhost:8080/images/zapato-vestir-oxford.jpg'),
-                                                                                  -- Libros
-                                                                                  ('22222222-0000-0000-0000-000000000005'::uuid, 'SKU-LIB-001', 'Clean Code', 'Robert C. Martin - Manual de agilidad de software', 45.00, true, '11111111-0000-0000-0000-000000000002'::uuid, 'http://localhost:8080/images/clean-code.jpg'),
-                                                                                  ('22222222-0000-0000-0000-000000000006'::uuid, 'SKU-LIB-002', 'The Pragmatic Programmer', 'Andrew Hunt - Tu camino a la maestría', 48.50, true, '11111111-0000-0000-0000-000000000002'::uuid, 'http://localhost:8080/images/the-pragmatic-programmer.jpg')
-    ON CONFLICT (id) DO UPDATE SET
-        sku = EXCLUDED.sku,
-        name = EXCLUDED.name,
-        description = EXCLUDED.description,
-        price = EXCLUDED.price,
-        active = EXCLUDED.active,
-        category_id = EXCLUDED.category_id,
-        image_url = EXCLUDED.image_url;
-*/
-
--- Apply the new column values to an existing DB without touching IDs.
-UPDATE products SET image_url = 'http://localhost:8080/images/camiseta-algodon-premium.jpg' WHERE sku = 'SKU-ROPA-001';
-UPDATE products SET image_url = 'http://localhost:8080/images/camiseta-polo-clasica.jpg' WHERE sku = 'SKU-ROPA-005';
-UPDATE products SET image_url = 'http://localhost:8080/images/camiseta-oversize.jpg' WHERE sku = 'SKU-ROPA-006';
-UPDATE products SET image_url = 'http://localhost:8080/images/jeans-slim-fit.jpg' WHERE sku = 'SKU-ROPA-002';
-UPDATE products SET image_url = 'http://localhost:8080/images/jean-negro-regular.jpg' WHERE sku = 'SKU-ROPA-007';
-UPDATE products SET image_url = 'http://localhost:8080/images/jean-azul-ripped.jpg' WHERE sku = 'SKU-ROPA-008';
-UPDATE products SET image_url = 'http://localhost:8080/images/zapatos-casuales.jpg' WHERE sku = 'SKU-ROPA-003';
-UPDATE products SET image_url = 'http://localhost:8080/images/zapatos-deportivos.jpg' WHERE sku = 'SKU-ROPA-004';
-UPDATE products SET image_url = 'http://localhost:8080/images/zapato-vestir-oxford.jpg' WHERE sku = 'SKU-ROPA-009';
-UPDATE products SET image_url = 'http://localhost:8080/images/clean-code.jpg' WHERE sku = 'SKU-LIB-001';
-UPDATE products SET image_url = 'http://localhost:8080/images/the-pragmatic-programmer.jpg' WHERE sku = 'SKU-LIB-002';
+INSERT INTO products (id, sku, name, description, price, active, category_id, image_url) VALUES
+    -- ROPA (5)
+    ('22222222-0000-0000-0000-000000000001'::uuid, 'SKU-ROPA-001', 'Camiseta Algodón Premium',  'Camiseta 100% algodón, azul',                    29.99,  true,  '11111111-0000-0000-0000-000000000001'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000002'::uuid, 'SKU-ROPA-002', 'Jeans Slim Fit',            'Pantalón vaquero corte moderno',                  69.99,  true,  '11111111-0000-0000-0000-000000000001'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000003'::uuid, 'SKU-ROPA-003', 'Zapatos Casuales',          'Calzado de cuero sintético cómodo',               89.90,  true,  '11111111-0000-0000-0000-000000000001'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000004'::uuid, 'SKU-ROPA-004', 'Zapatos Deportivos',        'Zapatillas para correr con amortiguación',        110.00, true,  '11111111-0000-0000-0000-000000000001'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000005'::uuid, 'SKU-ROPA-005', 'Chaqueta de Cuero',         'Chaqueta de cuero sintético, color negro',        150.00, false, '11111111-0000-0000-0000-000000000001'::uuid, NULL),
+    -- LIBROS (5)
+    ('22222222-0000-0000-0000-000000000006'::uuid, 'SKU-LIB-001', 'Clean Code',                 'Robert C. Martin - Manual de buenas prácticas',   45.00,  true,  '11111111-0000-0000-0000-000000000002'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000007'::uuid, 'SKU-LIB-002', 'The Pragmatic Programmer',   'Andrew Hunt - Tu camino a la maestría',           48.50,  true,  '11111111-0000-0000-0000-000000000002'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000008'::uuid, 'SKU-LIB-003', 'Design Patterns',            'GoF - Patrones de diseño esenciales',             52.00,  true,  '11111111-0000-0000-0000-000000000002'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000009'::uuid, 'SKU-LIB-004', 'Introduction to Algorithms', 'Cormen - Algoritmos y estructuras de datos',      80.00,  true,  '11111111-0000-0000-0000-000000000002'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000010'::uuid, 'SKU-LIB-005', 'Refactoring',                'Martin Fowler - Mejora de código existente',      42.00,  false, '11111111-0000-0000-0000-000000000002'::uuid, NULL),
+    -- ACCESORIOS (5)
+    ('22222222-0000-0000-0000-000000000011'::uuid, 'SKU-ACC-001', 'Reloj Deportivo',            'Reloj digital resistente al agua',               199.99, true,  '11111111-0000-0000-0000-000000000003'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000012'::uuid, 'SKU-ACC-002', 'Mochila Ejecutiva',          'Mochila para laptop de 15 pulgadas',              59.99,  true,  '11111111-0000-0000-0000-000000000003'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000013'::uuid, 'SKU-ACC-003', 'Cinturón de Cuero',          'Cinturón de cuero genuino, color café',           35.00,  true,  '11111111-0000-0000-0000-000000000003'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000014'::uuid, 'SKU-ACC-004', 'Gorra Universitaria',        'Gorra ajustable con logo bordado',                25.00,  true,  '11111111-0000-0000-0000-000000000003'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000015'::uuid, 'SKU-ACC-005', 'Billetera Elegante',         'Billetera de cuero con múltiples compartimentos', 45.00,  true,  '11111111-0000-0000-0000-000000000003'::uuid, NULL),
+    -- ELECTRÓNICA (5)
+    ('22222222-0000-0000-0000-000000000016'::uuid, 'SKU-ELEC-001', 'Audífonos Bluetooth',       'Audífonos inalámbricos con cancelación de ruido', 79.99,  true,  '11111111-0000-0000-0000-000000000004'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000017'::uuid, 'SKU-ELEC-002', 'Cargador Portátil',         'Batería externa 10000 mAh',                        39.99,  true,  '11111111-0000-0000-0000-000000000004'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000018'::uuid, 'SKU-ELEC-003', 'Teclado Mecánico',          'Teclado RGB retroiluminado, switches Cherry',     89.99,  true,  '11111111-0000-0000-0000-000000000004'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000019'::uuid, 'SKU-ELEC-004', 'Mouse Inalámbrico',         'Mouse ergonómico con sensor óptico',              49.99,  true,  '11111111-0000-0000-0000-000000000004'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000020'::uuid, 'SKU-ELEC-005', 'Parlante Portátil',         'Parlante Bluetooth resistente al agua',           65.00,  false, '11111111-0000-0000-0000-000000000004'::uuid, NULL),
+    -- HOGAR (5)
+    ('22222222-0000-0000-0000-000000000021'::uuid, 'SKU-HOG-001', 'Lámpara LED',                'Lámpara de escritorio con luz regulable',         34.99,  true,  '11111111-0000-0000-0000-000000000005'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000022'::uuid, 'SKU-HOG-002', 'Cojín Decorativo',           'Cojín suave para sala o habitación',              24.99,  true,  '11111111-0000-0000-0000-000000000005'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000023'::uuid, 'SKU-HOG-003', 'Organizador de Escritorio',  'Organizador múltiple para oficina',               29.99,  true,  '11111111-0000-0000-0000-000000000005'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000024'::uuid, 'SKU-HOG-004', 'Set de Sábanas',             'Sábanas de microfibra, color gris, 1.5 plazas',   55.00,  true,  '11111111-0000-0000-0000-000000000005'::uuid, NULL),
+    ('22222222-0000-0000-0000-000000000025'::uuid, 'SKU-HOG-005', 'Cuadro Decorativo',          'Lienzo abstracto 60x80 cm enmarcado',             42.00,  false, '11111111-0000-0000-0000-000000000005'::uuid, NULL);
 
 -- =============================================
--- 3. CLIENTES
+-- 3. CLIENTES (8)
 -- =============================================
-INSERT INTO customers (id, first_name, last_name, phone, email, status) VALUES
-                                                                            ('33333333-0000-0000-0000-000000000001'::uuid, 'Carlos', 'Martinez', '+573001112233', 'carlos.martinez@email.com', 'ACTIVE'),
-                                                                            ('33333333-0000-0000-0000-000000000002'::uuid, 'Ana', 'Lopez', '+573104445566', 'ana.lopez@email.com', 'ACTIVE')
-    ON CONFLICT (email) DO NOTHING;
+INSERT INTO customers (id, first_name, last_name, phone, email, status, user_id) VALUES
+    ('33333333-0000-0000-0000-000000000001'::uuid, 'Carlos', 'Martinez',  '+573001112233', 'carlos@email.com',     'ACTIVE',   'aaaaaaaa-0000-0000-0000-000000000002'::uuid),
+    ('33333333-0000-0000-0000-000000000002'::uuid, 'Ana',    'Lopez',     '+573104445566', 'ana@email.com',        'ACTIVE',   'aaaaaaaa-0000-0000-0000-000000000003'::uuid),
+    ('33333333-0000-0000-0000-000000000003'::uuid, 'Pedro',  'Ramirez',   '+573117778899', 'pedro@email.com',      'ACTIVE',   NULL),
+    ('33333333-0000-0000-0000-000000000004'::uuid, 'Maria',  'Garcia',    '+573124445566', 'maria@email.com',      'ACTIVE',   NULL),
+    ('33333333-0000-0000-0000-000000000005'::uuid, 'Juan',   'Diaz',      '+573132221100', 'juan@email.com',       'ACTIVE',   NULL),
+    ('33333333-0000-0000-0000-000000000006'::uuid, 'Sofia',  'Torres',    '+573145556677', 'sofia@email.com',      'ACTIVE',   NULL),
+    ('33333333-0000-0000-0000-000000000007'::uuid, 'Luis',   'Hernandez', '+573159998877', 'luis@email.com',       'INACTIVE', NULL),
+    ('33333333-0000-0000-0000-000000000008'::uuid, 'Laura',  'Castro',    '+573161112233', 'laura@email.com',      'INACTIVE', NULL);
 
 -- =============================================
--- 4. DIRECCIONES
+-- 4. DIRECCIONES (12)
 -- =============================================
 INSERT INTO addresses (id, street, city, state, zip, country, customer_id) VALUES
-                                                                               ('44444444-0000-0000-0000-000000000001'::uuid, 'Cra 5 10-20', 'Valledupar', 'Cesar', '200001', 'Colombia', '33333333-0000-0000-0000-000000000001'::uuid),
-                                                                               ('44444444-0000-0000-0000-000000000002'::uuid, 'Calle 80 55-30', 'Bogota', 'Cundinamarca', '110111', 'Colombia', '33333333-0000-0000-0000-000000000002'::uuid)
-    ON CONFLICT DO NOTHING;
+    ('44444444-0000-0000-0000-000000000001'::uuid, 'Cra 5 10-20',       'Valledupar',   'Cesar',        '200001', 'Colombia', '33333333-0000-0000-0000-000000000001'::uuid),
+    ('44444444-0000-0000-0000-000000000002'::uuid, 'Calle 15 20-30',    'Valledupar',   'Cesar',        '200002', 'Colombia', '33333333-0000-0000-0000-000000000001'::uuid),
+    ('44444444-0000-0000-0000-000000000003'::uuid, 'Calle 80 55-30',    'Bogotá',       'Cundinamarca', '110111', 'Colombia', '33333333-0000-0000-0000-000000000002'::uuid),
+    ('44444444-0000-0000-0000-000000000004'::uuid, 'Cra 7 42-10',       'Bogotá',       'Cundinamarca', '110311', 'Colombia', '33333333-0000-0000-0000-000000000002'::uuid),
+    ('44444444-0000-0000-0000-000000000005'::uuid, 'Av Siempre Viva 123', 'Medellín',   'Antioquia',    '050001', 'Colombia', '33333333-0000-0000-0000-000000000003'::uuid),
+    ('44444444-0000-0000-0000-000000000006'::uuid, 'Carrera 45 30-20',  'Cali',         'Valle',        '760001', 'Colombia', '33333333-0000-0000-0000-000000000004'::uuid),
+    ('44444444-0000-0000-0000-000000000007'::uuid, 'Calle 100 15-80',   'Barranquilla', 'Atlántico',    '080001', 'Colombia', '33333333-0000-0000-0000-000000000005'::uuid),
+    ('44444444-0000-0000-0000-000000000008'::uuid, 'Cra 8 25-60',       'Barranquilla', 'Atlántico',    '080002', 'Colombia', '33333333-0000-0000-0000-000000000005'::uuid),
+    ('44444444-0000-0000-0000-000000000009'::uuid, 'Av 68 12-34',       'Bogotá',       'Cundinamarca', '110931', 'Colombia', '33333333-0000-0000-0000-000000000006'::uuid),
+    ('44444444-0000-0000-0000-000000000010'::uuid, 'Calle 50 8-90',     'Cartagena',    'Bolívar',      '130001', 'Colombia', '33333333-0000-0000-0000-000000000007'::uuid),
+    ('44444444-0000-0000-0000-000000000011'::uuid, 'Carrera 30 45-12',  'Bucaramanga',  'Santander',    '680001', 'Colombia', '33333333-0000-0000-0000-000000000008'::uuid),
+    ('44444444-0000-0000-0000-000000000012'::uuid, 'Calle 9 10-20',     'Cali',         'Valle',        '760002', 'Colombia', '33333333-0000-0000-0000-000000000004'::uuid);
 
 -- =============================================
--- 5. INVENTARIOS
+-- 5. INVENTARIOS (25)
+--    6 con stock bajo (available < minimum)
 -- =============================================
 INSERT INTO inventories (id, available_stock, minimum_stock, product_id) VALUES
-                                                                             ('55555555-0000-0000-0000-000000000001'::uuid, 100, 10, '22222222-0000-0000-0000-000000000001'::uuid),
-                                                                             ('55555555-0000-0000-0000-000000000002'::uuid, 50, 5, '22222222-0000-0000-0000-000000000002'::uuid),
-                                                                             ('55555555-0000-0000-0000-000000000003'::uuid, 40, 5, '22222222-0000-0000-0000-000000000003'::uuid),
-                                                                             ('55555555-0000-0000-0000-000000000004'::uuid, 30, 5, '22222222-0000-0000-0000-000000000004'::uuid),
-                                                                             ('55555555-0000-0000-0000-000000000005'::uuid, 25, 3, '22222222-0000-0000-0000-000000000005'::uuid),
-                                                                             ('55555555-0000-0000-0000-000000000006'::uuid, 20, 3, '22222222-0000-0000-0000-000000000006'::uuid),
-                                                                             ('55555555-0000-0000-0000-000000000007'::uuid, 60, 5, '22222222-0000-0000-0000-000000000007'::uuid),
-                                                                             ('55555555-0000-0000-0000-000000000008'::uuid, 45, 5, '22222222-0000-0000-0000-000000000008'::uuid),
-                                                                             ('55555555-0000-0000-0000-000000000009'::uuid, 30, 3, '22222222-0000-0000-0000-000000000009'::uuid),
-                                                                             ('55555555-0000-0000-0000-000000000010'::uuid, 25, 3, '22222222-0000-0000-0000-000000000010'::uuid),
-                                                                             ('55555555-0000-0000-0000-000000000011'::uuid, 15, 2, '22222222-0000-0000-0000-000000000011'::uuid)
-    ON CONFLICT DO NOTHING;
+    ('55555555-0000-0000-0000-000000000001'::uuid, 100, 10, '22222222-0000-0000-0000-000000000001'::uuid),
+    ('55555555-0000-0000-0000-000000000002'::uuid, 50,  5,  '22222222-0000-0000-0000-000000000002'::uuid),
+    ('55555555-0000-0000-0000-000000000003'::uuid, 40,  5,  '22222222-0000-0000-0000-000000000003'::uuid),
+    ('55555555-0000-0000-0000-000000000004'::uuid, 30,  5,  '22222222-0000-0000-0000-000000000004'::uuid),
+    ('55555555-0000-0000-0000-000000000005'::uuid, 3,   10, '22222222-0000-0000-0000-000000000005'::uuid),  -- LOW
+    ('55555555-0000-0000-0000-000000000006'::uuid, 25,  3,  '22222222-0000-0000-0000-000000000006'::uuid),
+    ('55555555-0000-0000-0000-000000000007'::uuid, 20,  3,  '22222222-0000-0000-0000-000000000007'::uuid),
+    ('55555555-0000-0000-0000-000000000008'::uuid, 2,   5,  '22222222-0000-0000-0000-000000000008'::uuid),  -- LOW
+    ('55555555-0000-0000-0000-000000000009'::uuid, 10,  3,  '22222222-0000-0000-0000-000000000009'::uuid),
+    ('55555555-0000-0000-0000-000000000010'::uuid, 1,   5,  '22222222-0000-0000-0000-000000000010'::uuid),  -- LOW
+    ('55555555-0000-0000-0000-000000000011'::uuid, 60,  5,  '22222222-0000-0000-0000-000000000011'::uuid),
+    ('55555555-0000-0000-0000-000000000012'::uuid, 45,  5,  '22222222-0000-0000-0000-000000000012'::uuid),
+    ('55555555-0000-0000-0000-000000000013'::uuid, 30,  3,  '22222222-0000-0000-0000-000000000013'::uuid),
+    ('55555555-0000-0000-0000-000000000014'::uuid, 25,  3,  '22222222-0000-0000-0000-000000000014'::uuid),
+    ('55555555-0000-0000-0000-000000000015'::uuid, 2,   8,  '22222222-0000-0000-0000-000000000015'::uuid),  -- LOW
+    ('55555555-0000-0000-0000-000000000016'::uuid, 35,  5,  '22222222-0000-0000-0000-000000000016'::uuid),
+    ('55555555-0000-0000-0000-000000000017'::uuid, 40,  5,  '22222222-0000-0000-0000-000000000017'::uuid),
+    ('55555555-0000-0000-0000-000000000018'::uuid, 20,  5,  '22222222-0000-0000-0000-000000000018'::uuid),
+    ('55555555-0000-0000-0000-000000000019'::uuid, 15,  5,  '22222222-0000-0000-0000-000000000019'::uuid),
+    ('55555555-0000-0000-0000-000000000020'::uuid, 1,   5,  '22222222-0000-0000-0000-000000000020'::uuid),  -- LOW
+    ('55555555-0000-0000-0000-000000000021'::uuid, 50,  5,  '22222222-0000-0000-0000-000000000021'::uuid),
+    ('55555555-0000-0000-0000-000000000022'::uuid, 30,  5,  '22222222-0000-0000-0000-000000000022'::uuid),
+    ('55555555-0000-0000-0000-000000000023'::uuid, 25,  5,  '22222222-0000-0000-0000-000000000023'::uuid),
+    ('55555555-0000-0000-0000-000000000024'::uuid, 20,  3,  '22222222-0000-0000-0000-000000000024'::uuid),
+    ('55555555-0000-0000-0000-000000000025'::uuid, 0,   5,  '22222222-0000-0000-0000-000000000025'::uuid);  -- LOW (agotado)
 
 -- =============================================
--- 6. ORDENES
+-- 6. ORDENES (15)
+--    Distribución: 3 CREATED / 3 PAID / 3 SHIPPED
+--                  4 DELIVERED (2 en abril, 2 en mayo)
+--                  2 CANCELLED
 -- =============================================
 INSERT INTO orders (id, total, status, created_at, updated_at, customer_id, address_id) VALUES
-    ('66666666-0000-0000-0000-000000000001'::uuid, 99.98, 'PAID', NOW() - INTERVAL '2 days', NOW(), '33333333-0000-0000-0000-000000000001'::uuid, '44444444-0000-0000-0000-000000000001'::uuid)
-    ON CONFLICT DO NOTHING;
+    -- Carlos - PAID
+    ('66666666-0000-0000-0000-000000000001'::uuid, 164.96, 'PAID',      NOW() - INTERVAL '2 days',   NOW() - INTERVAL '2 days',   '33333333-0000-0000-0000-000000000001'::uuid, '44444444-0000-0000-0000-000000000001'::uuid),
+    -- Ana - CREATED
+    ('66666666-0000-0000-0000-000000000002'::uuid, 93.50,  'CREATED',   NOW() - INTERVAL '1 day',    NOW() - INTERVAL '1 day',    '33333333-0000-0000-0000-000000000002'::uuid, '44444444-0000-0000-0000-000000000003'::uuid),
+    -- Pedro - DELIVERED (abril)
+    ('66666666-0000-0000-0000-000000000003'::uuid, 349.88, 'DELIVERED', '2026-04-10 10:00:00',       '2026-04-15 14:30:00',       '33333333-0000-0000-0000-000000000003'::uuid, '44444444-0000-0000-0000-000000000005'::uuid),
+    -- Maria - DELIVERED (abril)
+    ('66666666-0000-0000-0000-000000000004'::uuid, 229.98, 'DELIVERED', '2026-04-20 09:00:00',       '2026-04-25 11:00:00',       '33333333-0000-0000-0000-000000000004'::uuid, '44444444-0000-0000-0000-000000000006'::uuid),
+    -- Juan - DELIVERED (mayo)
+    ('66666666-0000-0000-0000-000000000005'::uuid, 244.97, 'DELIVERED', '2026-05-05 10:00:00',       '2026-05-10 16:00:00',       '33333333-0000-0000-0000-000000000005'::uuid, '44444444-0000-0000-0000-000000000007'::uuid),
+    -- Sofia - DELIVERED (mayo)
+    ('66666666-0000-0000-0000-000000000006'::uuid, 229.94, 'DELIVERED', '2026-05-15 11:00:00',       '2026-05-20 15:00:00',       '33333333-0000-0000-0000-000000000006'::uuid, '44444444-0000-0000-0000-000000000009'::uuid),
+    -- Carlos - SHIPPED
+    ('66666666-0000-0000-0000-000000000007'::uuid, 70.00,  'SHIPPED',   NOW() - INTERVAL '4 days',   NOW() - INTERVAL '3 days',   '33333333-0000-0000-0000-000000000001'::uuid, '44444444-0000-0000-0000-000000000002'::uuid),
+    -- Ana - SHIPPED
+    ('66666666-0000-0000-0000-000000000008'::uuid, 132.00, 'SHIPPED',   NOW() - INTERVAL '5 days',   NOW() - INTERVAL '4 days',   '33333333-0000-0000-0000-000000000002'::uuid, '44444444-0000-0000-0000-000000000004'::uuid),
+    -- Pedro - CREATED
+    ('66666666-0000-0000-0000-000000000009'::uuid, 99.97,  'CREATED',   NOW(),                        NOW(),                        '33333333-0000-0000-0000-000000000003'::uuid, '44444444-0000-0000-0000-000000000005'::uuid),
+    -- Maria - PAID
+    ('66666666-0000-0000-0000-000000000010'::uuid, 214.99, 'PAID',      NOW() - INTERVAL '2 days',   NOW() - INTERVAL '2 days',   '33333333-0000-0000-0000-000000000004'::uuid, '44444444-0000-0000-0000-000000000012'::uuid),
+    -- Juan - CANCELLED
+    ('66666666-0000-0000-0000-000000000011'::uuid, 244.99, 'CANCELLED', NOW() - INTERVAL '6 days',   NOW() - INTERVAL '5 days',   '33333333-0000-0000-0000-000000000005'::uuid, '44444444-0000-0000-0000-000000000008'::uuid),
+    -- Sofia - CREATED
+    ('66666666-0000-0000-0000-000000000012'::uuid, 97.00,  'CREATED',   NOW(),                        NOW(),                        '33333333-0000-0000-0000-000000000006'::uuid, '44444444-0000-0000-0000-000000000009'::uuid),
+    -- Carlos - PAID
+    ('66666666-0000-0000-0000-000000000013'::uuid, 159.98, 'PAID',      NOW() - INTERVAL '5 hours',  NOW() - INTERVAL '1 hour',   '33333333-0000-0000-0000-000000000001'::uuid, '44444444-0000-0000-0000-000000000001'::uuid),
+    -- Ana - SHIPPED
+    ('66666666-0000-0000-0000-000000000014'::uuid, 83.49,  'SHIPPED',   NOW() - INTERVAL '3 days',   NOW() - INTERVAL '2 days',   '33333333-0000-0000-0000-000000000002'::uuid, '44444444-0000-0000-0000-000000000003'::uuid),
+    -- Pedro - CANCELLED
+    ('66666666-0000-0000-0000-000000000015'::uuid, 89.99,  'CANCELLED', NOW() - INTERVAL '4 days',   NOW() - INTERVAL '3 days',   '33333333-0000-0000-0000-000000000003'::uuid, '44444444-0000-0000-0000-000000000005'::uuid);
 
 -- =============================================
--- 7. ITEMS DE ORDEN
+-- 7. ITEMS DE ORDEN (33)
 -- =============================================
 INSERT INTO order_items (id, quantity, unit_price, subtotal, order_id, product_id) VALUES
-                                                                                       ('77777777-0000-0000-0000-000000000001'::uuid, 1, 29.99, 29.99, '66666666-0000-0000-0000-000000000001'::uuid, '22222222-0000-0000-0000-000000000001'::uuid),
-                                                                                       ('77777777-0000-0000-0000-000000000002'::uuid, 1, 69.99, 69.99, '66666666-0000-0000-0000-000000000001'::uuid, '22222222-0000-0000-0000-000000000002'::uuid)
-    ON CONFLICT DO NOTHING;
+
+    -- Orden 1 (Carlos, PAID) - 3 items
+    ('77777777-0000-0000-0000-000000000001'::uuid, 2, 29.99,  59.98,  '66666666-0000-0000-0000-000000000001'::uuid, '22222222-0000-0000-0000-000000000001'::uuid),
+    ('77777777-0000-0000-0000-000000000002'::uuid, 1, 69.99,  69.99,  '66666666-0000-0000-0000-000000000001'::uuid, '22222222-0000-0000-0000-000000000002'::uuid),
+    ('77777777-0000-0000-0000-000000000003'::uuid, 1, 34.99,  34.99,  '66666666-0000-0000-0000-000000000001'::uuid, '22222222-0000-0000-0000-000000000021'::uuid),
+
+    -- Orden 2 (Ana, CREATED) - 2 items
+    ('77777777-0000-0000-0000-000000000004'::uuid, 1, 45.00,  45.00,  '66666666-0000-0000-0000-000000000002'::uuid, '22222222-0000-0000-0000-000000000006'::uuid),
+    ('77777777-0000-0000-0000-000000000005'::uuid, 1, 48.50,  48.50,  '66666666-0000-0000-0000-000000000002'::uuid, '22222222-0000-0000-0000-000000000007'::uuid),
+
+    -- Orden 3 (Pedro, DELIVERED - abril) - 3 items
+    ('77777777-0000-0000-0000-000000000006'::uuid, 1, 89.90,  89.90,  '66666666-0000-0000-0000-000000000003'::uuid, '22222222-0000-0000-0000-000000000003'::uuid),
+    ('77777777-0000-0000-0000-000000000007'::uuid, 1, 199.99, 199.99, '66666666-0000-0000-0000-000000000003'::uuid, '22222222-0000-0000-0000-000000000011'::uuid),
+    ('77777777-0000-0000-0000-000000000008'::uuid, 1, 59.99,  59.99,  '66666666-0000-0000-0000-000000000003'::uuid, '22222222-0000-0000-0000-000000000012'::uuid),
+
+    -- Orden 4 (Maria, DELIVERED - abril) - 3 items
+    ('77777777-0000-0000-0000-000000000009'::uuid, 1, 110.00, 110.00, '66666666-0000-0000-0000-000000000004'::uuid, '22222222-0000-0000-0000-000000000004'::uuid),
+    ('77777777-0000-0000-0000-000000000010'::uuid, 1, 79.99,  79.99,  '66666666-0000-0000-0000-000000000004'::uuid, '22222222-0000-0000-0000-000000000016'::uuid),
+    ('77777777-0000-0000-0000-000000000011'::uuid, 1, 39.99,  39.99,  '66666666-0000-0000-0000-000000000004'::uuid, '22222222-0000-0000-0000-000000000017'::uuid),
+
+    -- Orden 5 (Juan, DELIVERED - mayo) - 3 items
+    ('77777777-0000-0000-0000-000000000012'::uuid, 2, 59.99,  119.98, '66666666-0000-0000-0000-000000000005'::uuid, '22222222-0000-0000-0000-000000000012'::uuid),
+    ('77777777-0000-0000-0000-000000000013'::uuid, 1, 89.99,  89.99,  '66666666-0000-0000-0000-000000000005'::uuid, '22222222-0000-0000-0000-000000000018'::uuid),
+    ('77777777-0000-0000-0000-000000000014'::uuid, 1, 35.00,  35.00,  '66666666-0000-0000-0000-000000000005'::uuid, '22222222-0000-0000-0000-000000000013'::uuid),
+
+    -- Orden 6 (Sofia, DELIVERED - mayo) - 3 items
+    ('77777777-0000-0000-0000-000000000015'::uuid, 3, 29.99,  89.97,  '66666666-0000-0000-0000-000000000006'::uuid, '22222222-0000-0000-0000-000000000001'::uuid),
+    ('77777777-0000-0000-0000-000000000016'::uuid, 1, 69.99,  69.99,  '66666666-0000-0000-0000-000000000006'::uuid, '22222222-0000-0000-0000-000000000002'::uuid),
+    ('77777777-0000-0000-0000-000000000017'::uuid, 2, 34.99,  69.98,  '66666666-0000-0000-0000-000000000006'::uuid, '22222222-0000-0000-0000-000000000021'::uuid),
+
+    -- Orden 7 (Carlos, SHIPPED) - 1 item
+    ('77777777-0000-0000-0000-000000000018'::uuid, 2, 35.00,  70.00,  '66666666-0000-0000-0000-000000000007'::uuid, '22222222-0000-0000-0000-000000000013'::uuid),
+
+    -- Orden 8 (Ana, SHIPPED) - 2 items
+    ('77777777-0000-0000-0000-000000000019'::uuid, 1, 52.00,  52.00,  '66666666-0000-0000-0000-000000000008'::uuid, '22222222-0000-0000-0000-000000000008'::uuid),
+    ('77777777-0000-0000-0000-000000000020'::uuid, 1, 80.00,  80.00,  '66666666-0000-0000-0000-000000000008'::uuid, '22222222-0000-0000-0000-000000000009'::uuid),
+
+    -- Orden 9 (Pedro, CREATED) - 2 items
+    ('77777777-0000-0000-0000-000000000021'::uuid, 1, 49.99,  49.99,  '66666666-0000-0000-0000-000000000009'::uuid, '22222222-0000-0000-0000-000000000019'::uuid),
+    ('77777777-0000-0000-0000-000000000022'::uuid, 2, 24.99,  49.98,  '66666666-0000-0000-0000-000000000009'::uuid, '22222222-0000-0000-0000-000000000022'::uuid),
+
+    -- Orden 10 (Maria, PAID) - 3 items
+    ('77777777-0000-0000-0000-000000000023'::uuid, 3, 25.00,  75.00,  '66666666-0000-0000-0000-000000000010'::uuid, '22222222-0000-0000-0000-000000000014'::uuid),
+    ('77777777-0000-0000-0000-000000000024'::uuid, 1, 29.99,  29.99,  '66666666-0000-0000-0000-000000000010'::uuid, '22222222-0000-0000-0000-000000000023'::uuid),
+    ('77777777-0000-0000-0000-000000000025'::uuid, 1, 110.00, 110.00, '66666666-0000-0000-0000-000000000010'::uuid, '22222222-0000-0000-0000-000000000004'::uuid),
+
+    -- Orden 11 (Juan, CANCELLED) - 2 items
+    ('77777777-0000-0000-0000-000000000026'::uuid, 1, 45.00,  45.00,  '66666666-0000-0000-0000-000000000011'::uuid, '22222222-0000-0000-0000-000000000006'::uuid),
+    ('77777777-0000-0000-0000-000000000027'::uuid, 1, 199.99, 199.99, '66666666-0000-0000-0000-000000000011'::uuid, '22222222-0000-0000-0000-000000000011'::uuid),
+
+    -- Orden 12 (Sofia, CREATED) - 2 items
+    ('77777777-0000-0000-0000-000000000028'::uuid, 1, 55.00,  55.00,  '66666666-0000-0000-0000-000000000012'::uuid, '22222222-0000-0000-0000-000000000024'::uuid),
+    ('77777777-0000-0000-0000-000000000029'::uuid, 1, 42.00,  42.00,  '66666666-0000-0000-0000-000000000012'::uuid, '22222222-0000-0000-0000-000000000025'::uuid),
+
+    -- Orden 13 (Carlos, PAID) - 1 item
+    ('77777777-0000-0000-0000-000000000030'::uuid, 2, 79.99,  159.98, '66666666-0000-0000-0000-000000000013'::uuid, '22222222-0000-0000-0000-000000000016'::uuid),
+
+    -- Orden 14 (Ana, SHIPPED) - 2 items
+    ('77777777-0000-0000-0000-000000000031'::uuid, 1, 48.50,  48.50,  '66666666-0000-0000-0000-000000000014'::uuid, '22222222-0000-0000-0000-000000000007'::uuid),
+    ('77777777-0000-0000-0000-000000000032'::uuid, 1, 34.99,  34.99,  '66666666-0000-0000-0000-000000000014'::uuid, '22222222-0000-0000-0000-000000000021'::uuid),
+
+    -- Orden 15 (Pedro, CANCELLED) - 1 item
+    ('77777777-0000-0000-0000-000000000033'::uuid, 1, 89.99,  89.99,  '66666666-0000-0000-0000-000000000015'::uuid, '22222222-0000-0000-0000-000000000018'::uuid);
+
+-- =============================================
+-- 8. HISTORIAL DE ESTADOS (38 registros)
+-- =============================================
+INSERT INTO order_status_history (id, previous_status, new_status, notes, changed_at, order_id) VALUES
+
+    -- Orden 1 (PAID): CREATED → PAID
+    ('88888888-0000-0000-0000-000000000001'::uuid, NULL,                'CREATED',  'Orden creada',                   NOW() - INTERVAL '2 days' - INTERVAL '1 hour', '66666666-0000-0000-0000-000000000001'::uuid),
+    ('88888888-0000-0000-0000-000000000002'::uuid, 'CREATED',           'PAID',     'Pago confirmado',                NOW() - INTERVAL '2 days',                     '66666666-0000-0000-0000-000000000001'::uuid),
+
+    -- Orden 2 (CREATED)
+    ('88888888-0000-0000-0000-000000000003'::uuid, NULL,                'CREATED',  'Orden creada',                   NOW() - INTERVAL '1 day',                      '66666666-0000-0000-0000-000000000002'::uuid),
+
+    -- Orden 3 (DELIVERED - abril): CREATED → PAID → SHIPPED → DELIVERED
+    ('88888888-0000-0000-0000-000000000004'::uuid, NULL,                'CREATED',  'Orden creada',                   '2026-04-10 10:00:00',                         '66666666-0000-0000-0000-000000000003'::uuid),
+    ('88888888-0000-0000-0000-000000000005'::uuid, 'CREATED',           'PAID',     'Pago con tarjeta de crédito',    '2026-04-11 10:00:00',                         '66666666-0000-0000-0000-000000000003'::uuid),
+    ('88888888-0000-0000-0000-000000000006'::uuid, 'PAID',              'SHIPPED',  'Enviado por mensajería',         '2026-04-13 10:00:00',                         '66666666-0000-0000-0000-000000000003'::uuid),
+    ('88888888-0000-0000-0000-000000000007'::uuid, 'SHIPPED',           'DELIVERED','Entregado al cliente',           '2026-04-15 14:30:00',                         '66666666-0000-0000-0000-000000000003'::uuid),
+
+    -- Orden 4 (DELIVERED - abril): CREATED → PAID → SHIPPED → DELIVERED
+    ('88888888-0000-0000-0000-000000000008'::uuid, NULL,                'CREATED',  'Orden creada',                   '2026-04-20 09:00:00',                         '66666666-0000-0000-0000-000000000004'::uuid),
+    ('88888888-0000-0000-0000-000000000009'::uuid, 'CREATED',           'PAID',     'Pago en línea exitoso',          '2026-04-21 09:00:00',                         '66666666-0000-0000-0000-000000000004'::uuid),
+    ('88888888-0000-0000-0000-000000000010'::uuid, 'PAID',              'SHIPPED',  'Productos en tránsito',          '2026-04-23 09:00:00',                         '66666666-0000-0000-0000-000000000004'::uuid),
+    ('88888888-0000-0000-0000-000000000011'::uuid, 'SHIPPED',           'DELIVERED','Recibido conforme',              '2026-04-25 11:00:00',                         '66666666-0000-0000-0000-000000000004'::uuid),
+
+    -- Orden 5 (DELIVERED - mayo): CREATED → PAID → SHIPPED → DELIVERED
+    ('88888888-0000-0000-0000-000000000012'::uuid, NULL,                'CREATED',  'Orden creada',                   '2026-05-05 10:00:00',                         '66666666-0000-0000-0000-000000000005'::uuid),
+    ('88888888-0000-0000-0000-000000000013'::uuid, 'CREATED',           'PAID',     'Transferencia bancaria',         '2026-05-06 10:00:00',                         '66666666-0000-0000-0000-000000000005'::uuid),
+    ('88888888-0000-0000-0000-000000000014'::uuid, 'PAID',              'SHIPPED',  'Despachado a dirección',         '2026-05-08 10:00:00',                         '66666666-0000-0000-0000-000000000005'::uuid),
+    ('88888888-0000-0000-0000-000000000015'::uuid, 'SHIPPED',           'DELIVERED','Entregado',                      '2026-05-10 16:00:00',                         '66666666-0000-0000-0000-000000000005'::uuid),
+
+    -- Orden 6 (DELIVERED - mayo): CREATED → PAID → SHIPPED → DELIVERED
+    ('88888888-0000-0000-0000-000000000016'::uuid, NULL,                'CREATED',  'Orden creada',                   '2026-05-15 11:00:00',                         '66666666-0000-0000-0000-000000000006'::uuid),
+    ('88888888-0000-0000-0000-000000000017'::uuid, 'CREATED',           'PAID',     'Pago con tarjeta débito',        '2026-05-16 11:00:00',                         '66666666-0000-0000-0000-000000000006'::uuid),
+    ('88888888-0000-0000-0000-000000000018'::uuid, 'PAID',              'SHIPPED',  'Enviado',                        '2026-05-18 11:00:00',                         '66666666-0000-0000-0000-000000000006'::uuid),
+    ('88888888-0000-0000-0000-000000000019'::uuid, 'SHIPPED',           'DELIVERED','Recibido por el cliente',        '2026-05-20 15:00:00',                         '66666666-0000-0000-0000-000000000006'::uuid),
+
+    -- Orden 7 (SHIPPED): CREATED → PAID → SHIPPED
+    ('88888888-0000-0000-0000-000000000020'::uuid, NULL,                'CREATED',  'Orden creada',                   NOW() - INTERVAL '4 days',                     '66666666-0000-0000-0000-000000000007'::uuid),
+    ('88888888-0000-0000-0000-000000000021'::uuid, 'CREATED',           'PAID',     'Pago verificado',                NOW() - INTERVAL '3 days' - INTERVAL '2 hours','66666666-0000-0000-0000-000000000007'::uuid),
+    ('88888888-0000-0000-0000-000000000022'::uuid, 'PAID',              'SHIPPED',  'En camino',                      NOW() - INTERVAL '3 days',                     '66666666-0000-0000-0000-000000000007'::uuid),
+
+    -- Orden 8 (SHIPPED): CREATED → PAID → SHIPPED
+    ('88888888-0000-0000-0000-000000000023'::uuid, NULL,                'CREATED',  'Orden creada',                   NOW() - INTERVAL '5 days',                     '66666666-0000-0000-0000-000000000008'::uuid),
+    ('88888888-0000-0000-0000-000000000024'::uuid, 'CREATED',           'PAID',     'Pago procesado',                 NOW() - INTERVAL '4 days' - INTERVAL '3 hours','66666666-0000-0000-0000-000000000008'::uuid),
+    ('88888888-0000-0000-0000-000000000025'::uuid, 'PAID',              'SHIPPED',  'Despachado',                     NOW() - INTERVAL '4 days',                     '66666666-0000-0000-0000-000000000008'::uuid),
+
+    -- Orden 9 (CREATED)
+    ('88888888-0000-0000-0000-000000000026'::uuid, NULL,                'CREATED',  'Orden creada',                   NOW(),                                        '66666666-0000-0000-0000-000000000009'::uuid),
+
+    -- Orden 10 (PAID): CREATED → PAID
+    ('88888888-0000-0000-0000-000000000027'::uuid, NULL,                'CREATED',  'Orden creada',                   NOW() - INTERVAL '2 days' - INTERVAL '2 hours','66666666-0000-0000-0000-000000000010'::uuid),
+    ('88888888-0000-0000-0000-000000000028'::uuid, 'CREATED',           'PAID',     'Pago recibido',                  NOW() - INTERVAL '2 days',                     '66666666-0000-0000-0000-000000000010'::uuid),
+
+    -- Orden 11 (CANCELLED): CREATED → CANCELLED
+    ('88888888-0000-0000-0000-000000000029'::uuid, NULL,                'CREATED',  'Orden creada',                   NOW() - INTERVAL '6 days',                     '66666666-0000-0000-0000-000000000011'::uuid),
+    ('88888888-0000-0000-0000-000000000030'::uuid, 'CREATED',           'CANCELLED','Cancelado por el cliente',       NOW() - INTERVAL '5 days',                     '66666666-0000-0000-0000-000000000011'::uuid),
+
+    -- Orden 12 (CREATED)
+    ('88888888-0000-0000-0000-000000000031'::uuid, NULL,                'CREATED',  'Orden creada',                   NOW(),                                        '66666666-0000-0000-0000-000000000012'::uuid),
+
+    -- Orden 13 (PAID): CREATED → PAID
+    ('88888888-0000-0000-0000-000000000032'::uuid, NULL,                'CREATED',  'Orden creada',                   NOW() - INTERVAL '5 hours',                    '66666666-0000-0000-0000-000000000013'::uuid),
+    ('88888888-0000-0000-0000-000000000033'::uuid, 'CREATED',           'PAID',     'Pago confirmado',                NOW() - INTERVAL '1 hour',                     '66666666-0000-0000-0000-000000000013'::uuid),
+
+    -- Orden 14 (SHIPPED): CREATED → PAID → SHIPPED
+    ('88888888-0000-0000-0000-000000000034'::uuid, NULL,                'CREATED',  'Orden creada',                   NOW() - INTERVAL '3 days',                     '66666666-0000-0000-0000-000000000014'::uuid),
+    ('88888888-0000-0000-0000-000000000035'::uuid, 'CREATED',           'PAID',     'Pago exitoso',                   NOW() - INTERVAL '2 days' - INTERVAL '1 hour','66666666-0000-0000-0000-000000000014'::uuid),
+    ('88888888-0000-0000-0000-000000000036'::uuid, 'PAID',              'SHIPPED',  'En ruta de entrega',             NOW() - INTERVAL '2 days',                     '66666666-0000-0000-0000-000000000014'::uuid),
+
+    -- Orden 15 (CANCELLED): CREATED → CANCELLED
+    ('88888888-0000-0000-0000-000000000037'::uuid, NULL,                'CREATED',  'Orden creada',                   NOW() - INTERVAL '4 days',                     '66666666-0000-0000-0000-000000000015'::uuid),
+    ('88888888-0000-0000-0000-000000000038'::uuid, 'CREATED',           'CANCELLED','Cancelado por falta de stock',   NOW() - INTERVAL '3 days',                     '66666666-0000-0000-0000-000000000015'::uuid);
