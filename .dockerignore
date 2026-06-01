@@ -1,0 +1,13 @@
+target/
+.mvn/
+src/
+.env*
+*.md
+*.log
+*.err
+.idea/
+.git/
+.gitattributes
+.gitignore
+.postman/
+postman/
