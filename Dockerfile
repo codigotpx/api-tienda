@@ -9,5 +9,7 @@ RUN ./mvnw package -DskipTests -q
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
+COPY start.sh start.sh
+RUN chmod +x start.sh
 EXPOSE 8080
-CMD ["java", "-jar", "app.jar"]
+CMD ["/app/start.sh"]
