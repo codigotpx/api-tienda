@@ -11,10 +11,12 @@ import com.tienda.universitaria.api.domain.repositories.CustomerRepository;
 import com.tienda.universitaria.api.domain.repositories.InventoryRepository;
 import com.tienda.universitaria.api.domain.repositories.OrderRepository;
 import com.tienda.universitaria.api.domain.repositories.ProductRepository;
+import com.tienda.universitaria.api.security.util.SecurityUtils;
 import com.tienda.universitaria.api.service.mapper.OrderItemMapper;
 import com.tienda.universitaria.api.service.mapper.OrderMapper;
 import com.tienda.universitaria.api.service.mapper.OrderStatusHistoryMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,13 +44,21 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final OrderStatusHistoryMapper orderStatusHistoryMapper;
+    private final SecurityUtils securityUtils;
 
     @Override
     public OrderDtos.OrderResponse create(OrderDtos.OrderCreateRequest req) {
         if (req == null) {
             throw new ValidationException("OrderCreateRequest must not be null");
         }
-        if (req.customerId() == null) {
+
+        final UUID resolvedCustomerId;
+        if (securityUtils.isAdmin()) {
+            resolvedCustomerId = req.customerId();
+        } else {
+            resolvedCustomerId = securityUtils.getCurrentCustomer().getId();
+        }
+        if (resolvedCustomerId == null) {
             throw new ValidationException("customerId must not be null");
         }
         if (req.addressId() == null) {
@@ -58,15 +68,15 @@ public class OrderServiceImpl implements OrderService {
             throw new ValidationException("orderItems must not be empty");
         }
 
-        Customer customer = customerRepository.findById(req.customerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found: " + req.customerId()));
+        Customer customer = customerRepository.findById(resolvedCustomerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found: " + resolvedCustomerId));
         if (customer.getStatus() != CustomerStatus.ACTIVE) {
             throw new BusinessException("Customer status must be ACTIVE");
         }
 
-        if (!addressRepository.existsByIdAndCustomerId(req.addressId(), req.customerId())) {
+        if (!addressRepository.existsByIdAndCustomerId(req.addressId(), resolvedCustomerId)) {
             throw new ResourceNotFoundException("Address not found for customer. customerId=%s addressId=%s"
-                    .formatted(req.customerId(), req.addressId()));
+                    .formatted(resolvedCustomerId, req.addressId()));
         }
         Address address = addressRepository.findById(req.addressId())
                 .orElseThrow(() -> new ResourceNotFoundException("Address not found: " + req.addressId()));
@@ -135,12 +145,26 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + id));
+
+        if (!securityUtils.isAdmin()) {
+            Customer current = securityUtils.getCurrentCustomer();
+            if (!order.getCustomer().getId().equals(current.getId())) {
+                throw new AccessDeniedException("Access denied");
+            }
+        }
+
         return orderMapper.toResponse(order);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<OrderDtos.OrderResponse> getAll() {
+        if (!securityUtils.isAdmin()) {
+            Customer current = securityUtils.getCurrentCustomer();
+            return orderRepository.findByCustomerId(current.getId()).stream()
+                    .map(orderMapper::toResponse)
+                    .toList();
+        }
         return orderRepository.findAll().stream()
                 .map(orderMapper::toResponse)
                 .toList();
@@ -152,6 +176,14 @@ public class OrderServiceImpl implements OrderService {
         if (customerId == null) {
             throw new ValidationException("customerId must not be null");
         }
+
+        if (!securityUtils.isAdmin()) {
+            Customer current = securityUtils.getCurrentCustomer();
+            if (!current.getId().equals(customerId)) {
+                throw new AccessDeniedException("Access denied");
+            }
+        }
+
         if (!customerRepository.existsById(customerId)) {
             throw new ResourceNotFoundException("Customer not found: " + customerId);
         }
@@ -171,6 +203,10 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal minTotal,
             BigDecimal maxTotal
     ) {
+        if (!securityUtils.isAdmin()) {
+            Customer current = securityUtils.getCurrentCustomer();
+            customerId = current.getId();
+        }
         return orderRepository.findByFilters(customerId, status, from, to, minTotal, maxTotal).stream()
                 .map(orderMapper::toResponse)
                 .toList();
@@ -245,6 +281,13 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+
+        if (!securityUtils.isAdmin()) {
+            Customer current = securityUtils.getCurrentCustomer();
+            if (!order.getCustomer().getId().equals(current.getId())) {
+                throw new AccessDeniedException("Access denied");
+            }
+        }
 
         return order.getOrderStatusHistory().stream()
                 .sorted((a, b) -> {

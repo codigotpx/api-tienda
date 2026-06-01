@@ -4,11 +4,12 @@ import com.tienda.universitaria.api.api.dto.CustomerDtos;
 import com.tienda.universitaria.api.domain.entities.Customer;
 import com.tienda.universitaria.api.domain.enums.CustomerStatus;
 import com.tienda.universitaria.api.domain.repositories.CustomerRepository;
+import com.tienda.universitaria.api.security.util.SecurityUtils;
 import com.tienda.universitaria.api.service.mapper.CustomerMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +23,7 @@ import com.tienda.universitaria.api.api.exception.ResourceNotFoundException;
 public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
     private final CustomerMapper customerMapper;
+    private final SecurityUtils securityUtils;
 
     @Override
     public CustomerDtos.CustomerResponse create(CustomerDtos.CustomerCreateRequest req) {
@@ -52,6 +54,13 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found: " + id));
 
+        if (!securityUtils.isAdmin()) {
+            Customer current = securityUtils.getCurrentCustomer();
+            if (!current.getId().equals(id)) {
+                throw new AccessDeniedException("Access denied");
+            }
+        }
+
         if (req.email() != null && !req.email().isBlank()) {
             String newEmail = req.email();
             String currentEmail = customer.getEmail();
@@ -74,6 +83,14 @@ public class CustomerServiceImpl implements CustomerService {
 
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found: " + id));
+
+        if (!securityUtils.isAdmin()) {
+            Customer current = securityUtils.getCurrentCustomer();
+            if (!current.getId().equals(id)) {
+                throw new AccessDeniedException("Access denied");
+            }
+        }
+
         return customerMapper.toResponse(customer);
     }
 
@@ -84,6 +101,13 @@ public class CustomerServiceImpl implements CustomerService {
             throw new ValidationException("email must not be blank");
         }
 
+        if (!securityUtils.isAdmin()) {
+            String currentEmail = securityUtils.getCurrentUsername();
+            if (!currentEmail.equalsIgnoreCase(email)) {
+                throw new AccessDeniedException("Access denied");
+            }
+        }
+
         Customer customer = customerRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found for email: " + email));
         return customerMapper.toResponse(customer);
@@ -92,7 +116,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional(readOnly = true)
     public CustomerDtos.CustomerResponse me() {
-        String email = currentUsername();
+        String email = securityUtils.getCurrentUsername();
         return getByEmail(email);
     }
 
@@ -102,11 +126,10 @@ public class CustomerServiceImpl implements CustomerService {
             throw new ValidationException("CustomerUpdateRequest must not be null");
         }
 
-        String email = currentUsername();
+        String email = securityUtils.getCurrentUsername();
         Customer customer = customerRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found for email: " + email));
 
-        // Don't allow clients to change their email here (it is the login username too). Admin can use update(id,...)
         var sanitized = new CustomerDtos.CustomerUpdateRequest(
                 req.firstName(),
                 req.lastName(),
@@ -119,17 +142,12 @@ public class CustomerServiceImpl implements CustomerService {
         return customerMapper.toResponse(saved);
     }
 
-    private static String currentUsername() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
-            throw new ValidationException("Not authenticated");
-        }
-        return auth.getName();
-    }
-
     @Override
     @Transactional(readOnly = true)
     public List<CustomerDtos.CustomerResponse> getAll() {
+        if (!securityUtils.isAdmin()) {
+            throw new AccessDeniedException("Access denied. Use /api/customers/me instead.");
+        }
         return customerRepository.findAll().stream()
                 .map(customerMapper::toResponse)
                 .toList();
@@ -140,6 +158,9 @@ public class CustomerServiceImpl implements CustomerService {
     public List<CustomerDtos.CustomerResponse> getByStatus(CustomerStatus status) {
         if (status == null) {
             throw new ValidationException("status must not be null");
+        }
+        if (!securityUtils.isAdmin()) {
+            throw new AccessDeniedException("Access denied");
         }
 
         return customerRepository.findByStatus(status).stream()
